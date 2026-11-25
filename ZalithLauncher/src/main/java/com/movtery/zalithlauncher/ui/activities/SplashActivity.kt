@@ -131,57 +131,20 @@ class SplashActivity : BaseAppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
+        // VOID: headless bootstrap. Unpack bundled JRE/LWJGL/SDL components, then hand
+        // off to VOID's own Compose UI. No Zalith launcher screen is ever shown.
         initUnpackItems()
 
-        setContent {
-            ZalithLauncherTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = backgroundColor(),
-                    contentColor = onBackgroundColor()
-                ) {
-                    SplashScreen(
-                        startAllTask = { startAllTask() },
-                        onWelcomeFinished = {
-                            acceptCurrentAgreement()
-                            switchScreen(SplashOperation.Loading)
-                            checkTasksToMain()
-                        },
-                        onExitClick = { finishAffinity() },
-                        availableAgreement = availableAgreement,
-                        unpackItems = unpackItems,
-                        screenViewModel = backStackViewModel
-                    )
-                }
-            }
-        }
-
         lifecycleScope.launch(Dispatchers.Main) {
-            switchScreen(SplashOperation.Loading)
-
-            // 检查安装包架构与设备不匹配
             if (!Architecture.isBuildArchCompatible(BuildKeys.BUILD_ARCH, Architecture.getDeviceArchitecture())) {
-                switchScreen(SplashOperation.ArchMismatch)
+                showFatalError(this@SplashActivity, getString(R.string.splash_arch_mismatch_title))
                 return@launch
             }
-
             withContext(Dispatchers.IO) {
                 checkAllTask()
-                val agreement = loadAvailableAgreement()
-                _availableAgreement.update { agreement }
+                if (requiresAgreementConsent()) acceptCurrentAgreement()
             }
-
-            // 检查协议同意情况
-            val acceptedAgreementVersion = launcherMMKV().getString(ACCEPTED_AGREEMENT_VERSION_KEY, null)
-            if (requiresAgreementConsent()) {
-                switchScreen(SplashOperation.Welcome)
-                // 曾同意过旧版的协议，发布对话框提醒
-                if (acceptedAgreementVersion != null) {
-                    showAgreementUpdateDialog()
-                }
-            } else {
-                checkTasksToMain()
-            }
+            if (!areAllTasksFinished()) startAllTask() else checkTasksToMain()
         }
     }
 
@@ -355,7 +318,7 @@ class SplashActivity : BaseAppCompatActivity() {
     }
 
     private fun swapToMain() {
-        val forward = Intent(this, MainActivity::class.java).apply {
+        val forward = Intent(this, com.voidlauncher.MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         startActivity(forward)
