@@ -106,7 +106,7 @@ private fun ensureQuickPlay(versionJson: JsonObject): VersionInfo.QuickPlay {
     var isQuickPlaySingleplayer = false
     var isQuickPlayMultiplayer = false
 
-    versionJson.getAsJsonObject("arguments")?.getAsJsonArray("game")?.forEach outerFor@{ element ->
+    versionJson.get("arguments")?.takeIf { it.isJsonObject }?.asJsonObject?.getAsJsonArray("game")?.forEach outerFor@{ element ->
         if (!element.isJsonObject) return@outerFor
 
         element.asJsonObject.getAsJsonArray("rules")?.forEach innerFor@{ rule ->
@@ -162,7 +162,7 @@ private fun extractMinecraftVersion(json: JsonObject): String {
 
     //尝试识别PCL导出的整合包给的版本
     //PCL顺手加的 [按住 W 开始思索]
-    if (json.has("clientVersion") && json.get("clientVersion").isJsonPrimitive) {
+    if (json.get("clientVersion")?.isJsonPrimitive == true) {
         val clientVersion = json.get("clientVersion").asString
         if (clientVersion.isNotEmptyOrBlank()) return clientVersion
     }
@@ -180,18 +180,26 @@ private fun extractMinecraftVersion(json: JsonObject): String {
 
     //从minecraft库中获取
     json.getAsJsonArray("libraries")?.forEach { lib ->
-        val (group, artifact, version) = lib.asJsonObject["name"].asString.split(":").let {
-            Triple(it[0], it[1], it.getOrNull(2) ?: "")
-        }
+        val name = lib.takeIf { it.isJsonObject }
+            ?.asJsonObject?.get("name")
+            ?.takeIf { it.isJsonPrimitive }?.asString
+            ?: return@forEach
+        val parts = name.split(":")
+        if (parts.size < 2) return@forEach
+        val group = parts[0]
+        val artifact = parts[1]
+        val version = parts.getOrNull(2) ?: ""
         if (group == "net.minecraft" && (artifact == "client" || artifact == "server")) {
             return version
         }
     }
 
-    val id = json["id"].asString
-    return if (json.has("inheritsFrom")) json["inheritsFrom"].asString
-    //尝试从ID中解析MC版本
-    else LOADER_DETECTORS.firstNotNullOfOrNull { it(id) } ?: id
+    val idPrimitive = json.get("id")?.takeIf { it.isJsonPrimitive }?.asString
+    val inherits = json.get("inheritsFrom")?.takeIf { it.isJsonPrimitive }?.asString
+    return inherits
+        ?: idPrimitive
+        //尝试从ID中解析MC版本
+        ?: "unknown"
 }
 
 /**
@@ -249,7 +257,7 @@ private fun detectModLoaders(versionJson: JsonObject): List<VersionInfo.LoaderIn
 
             //NeoForge
             group == "net.neoforged.fancymodloader" && artifact == "loader" -> {
-                val neoVersion = versionJson.getAsJsonObject("arguments")
+                val neoVersion = versionJson.get("arguments")?.takeIf { it.isJsonObject }?.asJsonObject
                     ?.getAsJsonArray("game")
                     ?.findNeoForgeVersion()
                     ?: version

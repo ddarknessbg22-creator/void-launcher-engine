@@ -129,7 +129,7 @@ class GameHandler(
                 else -> set(graphicsOption, graphicsApi.option)
             }
 
-            loadLanguage(version.getVersionInfo()!!.minecraftVersion)
+            loadLanguage(version.getVersionInfo()?.minecraftVersion ?: version.getVersionName())
             save()
         }
 

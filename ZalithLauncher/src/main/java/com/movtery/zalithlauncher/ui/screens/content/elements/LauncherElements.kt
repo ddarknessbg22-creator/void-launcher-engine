@@ -300,7 +300,7 @@ fun LaunchGameOperation(
 
                 val currentRenderer = Renderers.setCurrentRenderer(version.getRenderer())
 
-                val mcVer = version.getVersionInfo()!!.minecraftVersion
+                val mcVer = version.getVersionInfo()?.minecraftVersion ?: version.getVersionName()
 
                 val unsupportedPlugins = NativePluginManager.getCheckedPlugins().filter { plugin ->
                     (plugin.minMCVer?.let { mcVer.isLowerVer(it) } ?: false) ||

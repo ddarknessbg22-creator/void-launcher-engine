@@ -502,9 +502,9 @@ private class ModsUpdaterViewModel(
         onStart: () -> Unit = {},
         onStop: () -> Unit = {}
     ) {
-        val minecraftVer = version.getVersionInfo()!!.minecraftVersion
+        val minecraftVer = version.getVersionInfo()?.minecraftVersion ?: version.getVersionName()
         //模组更新按主加载器过滤
-        val modLoader = version.getVersionInfo()!!.primaryLoader?.loader ?: ModLoader.UNKNOWN
+        val modLoader = version.getVersionInfo()?.primaryLoader?.loader ?: ModLoader.UNKNOWN
 
         modsUpdater = ModUpdater(
             mods = mods,
