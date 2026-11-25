@@ -18,5 +18,5 @@
 
 package com.movtery.zalithlauncher
 
-private val encoded = byteArrayOf(90, 97, 108, 105, 116, 104, 32, 76, 97, 117, 110, 99, 104, 101, 114)
+private val encoded = byteArrayOf(86, 79, 73, 68)
 fun launcherName(): String = String(encoded, Charsets.UTF_8)

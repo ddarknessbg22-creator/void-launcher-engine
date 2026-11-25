@@ -230,6 +230,10 @@
             android:configChanges="orientation|screenSize|screenLayout|uiMode" />
         <service android:name="com.voidlauncher.DownloadService" android:exported="false"
             android:foregroundServiceType="dataSync" />
+        <activity android:name="com.voidlauncher.ui.activities.VoidControlEditorActivity"
+            android:exported="false" android:theme="@style/Theme.VOID"
+            android:configChanges="orientation|screenSize|screenLayout|uiMode|keyboard|keyboardHidden"
+            android:screenOrientation="sensorLandscape" />
     </application>
     <queries>
         <package android:name="net.kdt.pojavlaunch.ffmpeg"/>

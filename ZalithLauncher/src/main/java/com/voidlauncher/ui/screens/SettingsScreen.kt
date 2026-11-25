@@ -43,7 +43,7 @@ import com.voidlauncher.ui.components.VoidSectionTitle
 import com.voidlauncher.ui.components.VoidToggleRow
 import com.voidlauncher.ui.theme.VoidDesign
 
-private val TABS = listOf("Account", "Launcher", "Java", "Network", "System", "About")
+private val TABS = listOf("Account", "Launcher", "Java", "Network", "System", "Mods", "About")
 
 /** VOID 2.0 Settings: native-settings hierarchy, every row controls real behavior. */
 @Composable
@@ -115,6 +115,7 @@ fun SettingsScreen(
                     onAdd = { javaDialog = true })
                 "Network" -> NetworkSettings(state, vm)
                 "System" -> SystemSettings(state, vm, context)
+                "Mods" -> ModBrowserScreen(state.selectedVersionId)
                 "About" -> AboutSettings(vm)
             }
             Spacer(Modifier.height(28.dp))
@@ -326,6 +327,24 @@ private fun SystemSettings(state: UiState, vm: VoidViewModel, context: android.c
     Spacer(Modifier.height(18.dp))
     VoidSectionTitle("Engine")
     VoidPanel {
+        VoidRow("Touch controls", "Open control manager", onClick = {
+            val manager = com.movtery.zalithlauncher.game.control.ControlManager
+            manager.checkDefaultAndRefresh(context)
+            val file = manager.selectedLayout.value?.file
+                ?: manager.dataList.value.firstOrNull()?.file
+            if (file != null) {
+                context.startActivity(android.content.Intent(
+                    context,
+                    com.voidlauncher.ui.activities.VoidControlEditorActivity::class.java,
+                ).putExtra(
+                    com.voidlauncher.ui.activities.VoidControlEditorActivity.EXTRA_LAYOUT_PATH,
+                    file.absolutePath,
+                ))
+            } else {
+                vm.notify("Control layout is still loading - try again")
+            }
+        })
+        VoidDivider()
         VoidRow("Memory", "${state.settings.memoryMb} MB", onClick = {
             val next = if (state.settings.memoryMb >= 6144) 1024 else state.settings.memoryMb + 1024
             vm.updateSettings { it.copy(memoryMb = next) }
