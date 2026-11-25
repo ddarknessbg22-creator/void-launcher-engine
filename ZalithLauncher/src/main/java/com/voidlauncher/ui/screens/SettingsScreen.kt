@@ -390,4 +390,3 @@ private fun AboutSettings(vm: VoidViewModel) {
     Spacer(Modifier.height(10.dp))
     Text("VOID Launcher 1.0.0 · Kotlin · Compose · GPL-3.0 engine", style = VoidDesign.Caption)
 }
-    }
