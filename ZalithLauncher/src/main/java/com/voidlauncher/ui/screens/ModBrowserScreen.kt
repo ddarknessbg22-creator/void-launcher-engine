@@ -1,7 +1,6 @@
 package com.voidlauncher.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,8 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
@@ -95,12 +92,11 @@ fun ModBrowserScreen(selectedVersion: String?) {
                 }
                 !searched -> Text("Search to see real mods.", style = VoidDesign.Body)
                 results.isEmpty() -> Text("No mods found.", style = VoidDesign.Body)
-                else -> LazyColumn(Modifier.fillMaxSize()) {
-                    items(results, key = { it.platform to it.id }) { mod ->
+                else -> Column(Modifier.fillMaxWidth()) {
+                    results.take(50).forEach { mod ->
                         Row(
                             Modifier
                                 .fillMaxWidth()
-                                .clickable { }
                                 .background(Color(0xFF0B140B))
                                 .padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically,

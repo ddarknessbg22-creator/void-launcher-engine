@@ -123,6 +123,10 @@ class VoidViewModel(
                         installedVersions = list,
                     )
                 }
+                val current = settingsRepo.selectedVersionId
+                if (list.isNotEmpty() && (current == null || list.none { it.id == current })) {
+                    selectVersion(list.first().id)
+                }
             }
         }
         viewModelScope.launch {
