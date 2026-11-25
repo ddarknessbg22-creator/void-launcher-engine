@@ -1,5 +1,7 @@
 package com.voidlauncher
 
+import dagger.hilt.android.HiltAndroidApp
+
 import android.app.Application
 import com.movtery.zalithlauncher.game.renderer.Renderers
 import com.movtery.zalithlauncher.setting.RendererSettings
@@ -10,6 +12,7 @@ import com.voidlauncher.engine.EngineRepository
 import com.voidlauncher.util.TokenVault
 import com.voidlauncher.util.VoidPaths
 
+@HiltAndroidApp
 class VoidApplication : com.movtery.zalithlauncher.ZLApplication() {
     // App-scoped repositories survive Activity recreation; the foreground service owns long downloads.
     val versions: VersionRepository by lazy { VersionRepository(this) }
