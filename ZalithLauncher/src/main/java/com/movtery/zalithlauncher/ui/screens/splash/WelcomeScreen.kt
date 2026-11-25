@@ -617,15 +617,22 @@ private fun ProductBanner(
             contentDescription = null
         )
 
-        Text(
-            text = BuildKeys.LAUNCHER_NAME,
-            style = if (compact) {
-                MaterialTheme.typography.titleSmall
-            } else {
-                MaterialTheme.typography.headlineSmall
-            },
-            fontWeight = FontWeight.Bold
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = BuildKeys.LAUNCHER_NAME,
+                style = if (compact) {
+                    MaterialTheme.typography.titleSmall
+                } else {
+                    MaterialTheme.typography.headlineSmall
+                },
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Unofficial modified version of ZalithLauncher (GPL-3.0)",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
