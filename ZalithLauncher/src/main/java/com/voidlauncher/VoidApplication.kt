@@ -1,7 +1,6 @@
-import dagger.hilt.android.HiltAndroidApp
-
 package com.voidlauncher
 
+import dagger.hilt.android.HiltAndroidApp
 import com.voidlauncher.data.JavaRepository
 import com.voidlauncher.data.SettingsRepository
 import com.voidlauncher.data.VersionRepository
