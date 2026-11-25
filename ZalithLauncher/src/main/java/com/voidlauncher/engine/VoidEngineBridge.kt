@@ -6,6 +6,7 @@ import com.movtery.zalithlauncher.game.account.Account
 import com.movtery.zalithlauncher.game.account.AccountType as ZalithAccountType
 import com.movtery.zalithlauncher.game.account.AccountsManager
 import com.movtery.zalithlauncher.game.launch.GameLaunchFlow
+import com.movtery.zalithlauncher.game.renderer.Renderers
 import com.movtery.zalithlauncher.game.version.installed.SettingState
 import com.movtery.zalithlauncher.game.version.installed.VersionsManager
 import com.movtery.zalithlauncher.ui.toAndroidString
@@ -33,6 +34,8 @@ object VoidEngineBridge {
         val activity = context as? Activity
             ?: error("VOID needs an Activity context to start the game")
         TokenVault.init(context.applicationContext)
+        // Ensure the engine renderer registry is initialized before GameLaunchFlow.
+        Renderers.init()
 
         val gameHome = VoidPaths.root(context).absolutePath
         val version = VersionsManager.loadVersion(gameHome, versionId)

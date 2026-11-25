@@ -1,6 +1,8 @@
 package com.voidlauncher
 
-import dagger.hilt.android.HiltAndroidApp
+import android.app.Application
+import com.movtery.zalithlauncher.game.renderer.Renderers
+import com.movtery.zalithlauncher.setting.RendererSettings
 import com.voidlauncher.data.JavaRepository
 import com.voidlauncher.data.SettingsRepository
 import com.voidlauncher.data.VersionRepository
@@ -8,7 +10,6 @@ import com.voidlauncher.engine.EngineRepository
 import com.voidlauncher.util.TokenVault
 import com.voidlauncher.util.VoidPaths
 
-@HiltAndroidApp
 class VoidApplication : com.movtery.zalithlauncher.ZLApplication() {
     // App-scoped repositories survive Activity recreation; the foreground service owns long downloads.
     val versions: VersionRepository by lazy { VersionRepository(this) }
@@ -28,5 +29,20 @@ class VoidApplication : com.movtery.zalithlauncher.ZLApplication() {
         VoidPaths.runtimes(root)
         VoidPaths.logs(root)
         VoidPaths.exports(root)
+
+        // VOID does not launch Zalith's launcher UI, so initialize the engine here.
+        runCatching {
+            Renderers.init()
+            val saved = RendererSettings.renderer.getValue()
+            if (saved.isNotBlank() && Renderers.getRenderers().any { it.getUniqueIdentifier() == saved }) {
+                Renderers.setCurrentRenderer(saved, retryToFirstOnFailure = false)
+            } else {
+                val first = Renderers.getRenderers().firstOrNull()
+                if (first != null) {
+                    Renderers.setCurrentRenderer(first.getUniqueIdentifier(), retryToFirstOnFailure = false)
+                    RendererSettings.renderer.save(first.getUniqueIdentifier())
+                }
+            }
+        }
     }
 }
