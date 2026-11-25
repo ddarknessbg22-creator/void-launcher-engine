@@ -1,3 +1,5 @@
+import dagger.hilt.android.HiltAndroidApp
+
 package com.voidlauncher
 
 import com.voidlauncher.data.JavaRepository
@@ -7,6 +9,7 @@ import com.voidlauncher.engine.EngineRepository
 import com.voidlauncher.util.TokenVault
 import com.voidlauncher.util.VoidPaths
 
+@HiltAndroidApp
 class VoidApplication : com.movtery.zalithlauncher.ZLApplication() {
     // App-scoped repositories survive Activity recreation; the foreground service owns long downloads.
     val versions: VersionRepository by lazy { VersionRepository(this) }
