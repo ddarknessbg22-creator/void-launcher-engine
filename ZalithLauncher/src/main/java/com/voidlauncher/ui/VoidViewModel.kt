@@ -107,6 +107,12 @@ class VoidViewModel(
                         latestRelease = manifest?.latest?.release ?: "",
                     )
                 }
+                // First run: preselect a sensible version so Home is never empty.
+                if (settingsRepo.selectedVersionId == null) {
+                    manifest?.latest?.release?.let { latest ->
+                        selectVersion(latest)
+                    }
+                }
             }
         }
         viewModelScope.launch {

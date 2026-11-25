@@ -69,10 +69,13 @@ fun VoidPrimaryButton(
             containerColor = VoidDesign.Ink,
             contentColor = VoidDesign.Canvas,
             disabledContainerColor = VoidDesign.PanelRaised,
-            disabledContentColor = VoidDesign.Faint,
+            disabledContentColor = VoidDesign.Muted,
         ),
     ) {
-        Text(text.uppercase(), style = VoidDesign.Title.copy(fontSize = 15.sp))
+        Text(
+            text.uppercase(),
+            style = VoidDesign.Title.copy(fontSize = 15.sp, color = VoidDesign.Canvas),
+        )
     }
 }
 

@@ -2,7 +2,6 @@ package com.voidlauncher.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,28 +66,32 @@ fun SettingsScreen(
             modifier = Modifier.padding(horizontal = 22.dp),
         )
         Spacer(Modifier.height(16.dp))
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 22.dp),
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
-        ) {
-            TABS.forEach { item ->
-                val selected = item == tab
-                Box(
-                    Modifier
-                        .clip(RoundedCornerShape(7.dp))
-                        .background(if (selected) VoidDesign.Ink else VoidDesign.Panel)
-                        .clickable { tab = item }
-                        .padding(horizontal = 12.dp, vertical = 7.dp),
+        Column(Modifier.padding(horizontal = 22.dp)) {
+            TABS.chunked(3).forEach { row ->
+                Row(
+                    Modifier.fillMaxWidth().padding(bottom = 7.dp),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
-                    Text(
-                        item.uppercase(),
-                        style = VoidDesign.Label.copy(
-                            color = if (selected) VoidDesign.Canvas else VoidDesign.Muted,
-                        ),
-                    )
+                    row.forEach { item ->
+                        val selected = item == tab
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(7.dp))
+                                .background(if (selected) VoidDesign.Ink else VoidDesign.Panel)
+                                .clickable { tab = item }
+                                .padding(vertical = 9.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                item.uppercase(),
+                                style = VoidDesign.Label.copy(
+                                    color = if (selected) VoidDesign.Canvas else VoidDesign.Muted,
+                                ),
+                                maxLines = 1,
+                            )
+                        }
+                    }
                 }
             }
         }
