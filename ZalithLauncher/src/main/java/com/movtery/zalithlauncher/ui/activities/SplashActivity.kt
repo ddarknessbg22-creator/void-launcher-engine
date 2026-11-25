@@ -128,7 +128,6 @@ class SplashActivity : BaseAppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
         super.onCreate(savedInstanceState)
 
         // VOID: headless bootstrap. Unpack bundled JRE/LWJGL/SDL components, then hand

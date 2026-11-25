@@ -8,4 +8,9 @@
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowNoTitle">true</item>
     </style>
+    <style name="Theme.VOID.Bootstrap" parent="Theme.VOID">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="windowNoTitle">true</item>
+    </style>
 </resources>
