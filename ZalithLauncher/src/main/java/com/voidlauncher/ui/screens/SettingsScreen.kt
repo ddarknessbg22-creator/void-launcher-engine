@@ -213,7 +213,7 @@ private fun AccountSettings(
                 if (account.type == AccountType.MICROSOFT) {
                     VoidSecondaryButton("Refresh", { vm.refreshAccountToken(account.id) }, Modifier.weight(1f))
                 }
-                VoidSecondaryButton("Delete", { onDelete(account.id) }, Modifier.weight(1f))
+                VoidSecondaryButton("Del", { onDelete(account.id) }, Modifier.weight(1f))
             }
         }
     }
@@ -305,7 +305,11 @@ private fun SystemSettings(state: UiState, vm: VoidViewModel, context: android.c
         )
         renderers.forEach { renderer ->
             VoidRow(
-                label = renderer.name,
+                label = renderer.name
+                    .replace("Renderer", "")
+                    .replace("Krypton Wrapper", "GL4ES (Krypton)")
+                    .replace("Freedreno (Adreno)", "Freedreno")
+                    .replace("Panfrost (Mali)", "Panfrost"),
                 value = when {
                     renderer.uniqueId == current -> "ACTIVE"
                     renderer.available -> "Use"
