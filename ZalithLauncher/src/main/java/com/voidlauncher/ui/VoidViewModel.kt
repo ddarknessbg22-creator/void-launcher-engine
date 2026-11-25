@@ -270,7 +270,8 @@ class VoidViewModel(
 
     fun selectVersion(id: String) {
         settingsRepo.selectedVersionId = id
-        _ui.update { it.copy(selectedVersionId = id, modsVersionId = id) }
+        settingsRepo.lastLaunchMessage = ""
+        _ui.update { it.copy(selectedVersionId = id, modsVersionId = id, lastLaunchMessage = "") }
         loadMods(id)
     }
 
@@ -414,6 +415,8 @@ class VoidViewModel(
             }.onSuccess { created ->
                 versions.refreshInstalledFromDisk()
                 selectVersion(created)
+                _ui.update { it.copy(activeLoader = loader) }
+                loadMods(created)
                 notify("$loader $loaderVersion installed as $created")
             }.onFailure { notify(it.message ?: "Loader install failed") }
             _ui.update { it.copy(loaderBusy = false) }
