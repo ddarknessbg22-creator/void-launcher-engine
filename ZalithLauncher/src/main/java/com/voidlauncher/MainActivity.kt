@@ -4,25 +4,24 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -50,17 +48,14 @@ import com.voidlauncher.data.VersionRepository
 import com.voidlauncher.engine.EngineRepository
 import com.voidlauncher.ui.UiState
 import com.voidlauncher.ui.VoidViewModel
+import com.voidlauncher.ui.components.VoidToast
 import com.voidlauncher.ui.screens.HomeScreen
 import com.voidlauncher.ui.screens.LibraryScreen
 import com.voidlauncher.ui.screens.SettingsScreen
 import com.voidlauncher.ui.screens.VersionsScreen
-import com.voidlauncher.ui.theme.Amoled
-import com.voidlauncher.ui.theme.Grey400
-import com.voidlauncher.ui.theme.Hairline
+import com.voidlauncher.ui.theme.VoidDesign
 import com.voidlauncher.ui.theme.VoidTheme
-import com.voidlauncher.ui.components.VoidToast
-import com.voidlauncher.ui.theme.White
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
 
@@ -82,12 +77,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        notificationPermission = registerForActivityResult(
-            ActivityResultContracts.RequestPermission(),
-        ) { granted ->
-            if (!granted) vm.notify("Downloads still work, but progress notifications are hidden")
-        }
+        notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
         if (
             android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
@@ -126,7 +116,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private val TABS = listOf("Home", "Versions", "Library", "Settings")
+private val NAV_ITEMS = listOf("Home", "Versions", "Library", "Settings")
 
 @Composable
 private fun VoidApp(state: UiState, vm: VoidViewModel, onMicrosoftLogin: () -> Unit) {
@@ -138,15 +128,19 @@ private fun VoidApp(state: UiState, vm: VoidViewModel, onMicrosoftLogin: () -> U
         toast = message
         vm.consumeSnackbar()
     }
-    // Separate effect: clearing the snackbar cancels the effect above, but not this one.
     LaunchedEffect(toast) {
         if (toast != null) {
-            kotlinx.coroutines.delay(2400)
+            delay(2400)
             toast = null
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Amoled)) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(VoidDesign.Canvas)
+            .windowInsetsPadding(WindowInsets.statusBars),
+    ) {
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f)) {
                 when (tab) {
@@ -156,77 +150,61 @@ private fun VoidApp(state: UiState, vm: VoidViewModel, onMicrosoftLogin: () -> U
                     "Settings" -> SettingsScreen(state, vm, onMicrosoftLogin)
                 }
             }
-            BottomBar(tab) { tab = it }
+            VoidBottomBar(tab) { tab = it }
         }
-        VoidToast(
-            message = toast,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 86.dp),
-        )
+        VoidToast(toast, Modifier.align(Alignment.BottomCenter).padding(bottom = 82.dp))
     }
 
     if (state.offlineNotice) {
         AlertDialog(
             onDismissRequest = { vm.dismissOfflineNotice() },
-            containerColor = com.voidlauncher.ui.theme.Surface1,
-            title = { Text("VOID", color = White, style = MaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)) },
+            containerColor = VoidDesign.Panel,
+            title = { Text("VOID", style = VoidDesign.Headline) },
             text = {
                 Text(
-                    "Create an offline profile. VOID installs the real game files, fetches a compatible engine " +
-                        "automatically and hands off the session for rendering.",
-                    color = Grey400,
+                    "Create an offline profile. VOID installs real game files and launches Minecraft inside this app.",
+                    style = VoidDesign.Body,
                 )
             },
-            confirmButton = {
-                TextButton(onClick = { vm.dismissOfflineNotice() }) { Text("Start", color = White) }
-            },
+            confirmButton = { TextButton(onClick = { vm.dismissOfflineNotice() }) { Text("START", color = VoidDesign.Ink) } },
         )
     }
 }
 
-/** Pure black bar with hairline divider, minimal label-only tabs. */
 @Composable
-private fun BottomBar(current: String, onSelect: (String) -> Unit) {
-    Column {
-        Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
+private fun VoidBottomBar(current: String, onSelect: (String) -> Unit) {
+    Column(Modifier.fillMaxWidth().background(VoidDesign.Canvas)) {
+        Box(Modifier.fillMaxWidth().height(1.dp).background(VoidDesign.Line))
         Row(
-            Modifier.fillMaxWidth().background(Amoled).padding(vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(vertical = 12.dp),
         ) {
-            TABS.forEach { t ->
-                val selected = current == t
+            NAV_ITEMS.forEach { item ->
+                val selected = item == current
                 Column(
                     Modifier
                         .weight(1f)
-                        .padding(vertical = 4.dp),
+                        .clickable { onSelect(item) },
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
+                    Text(
+                        item,
+                        style = VoidDesign.Label.copy(
+                            color = if (selected) VoidDesign.Ink else VoidDesign.Faint,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                        ),
+                    )
+                    Spacer(Modifier.height(5.dp))
                     Box(
                         Modifier
-                            .clickable { onSelect(t) }
-                            .padding(horizontal = 14.dp),
-                    ) {
-                        Text(
-                            t,
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (selected) White else Grey400,
-                            ),
-                        )
-                    }
-                    Spacer1(selected)
+                            .height(1.dp)
+                            .fillMaxWidth(if (selected) 0.22f else 0f)
+                            .background(VoidDesign.Ink),
+                    )
                 }
             }
         }
     }
-}
-
-@Composable
-private fun Spacer1(selected: Boolean) {
-    Box(
-        Modifier
-            .padding(top = 5.dp)
-            .size(width = 16.dp, height = 1.dp)
-            .background(if (selected) White else androidx.compose.ui.graphics.Color.Transparent),
-    )
 }
