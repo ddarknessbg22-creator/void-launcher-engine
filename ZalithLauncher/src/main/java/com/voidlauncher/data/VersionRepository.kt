@@ -142,6 +142,8 @@ class VersionRepository(context: Context) {
 
             fun publish(stage: String, file: String) {
                 val done = bytesDone.get()
+                val byBytes = if (totalBytes > 0) done.toFloat() / totalBytes else 0f
+                val byFiles = if (totalFiles > 0) filesDone.get().toFloat() / totalFiles else 0f
                 _download.value = DownloadState(
                     active = true,
                     versionId = id,
@@ -151,15 +153,29 @@ class VersionRepository(context: Context) {
                     filesTotal = totalFiles,
                     bytesDone = done,
                     bytesTotal = totalBytes,
-                    percent = if (totalBytes > 0) (done.toFloat() / totalBytes).coerceIn(0f, 1f) else 0f,
+                    // Never let the bar look frozen because the byte estimate was low.
+                    percent = maxOf(byBytes, byFiles * 0.98f).coerceIn(0f, 1f),
                 )
+            }
+
+            // Keeps the UI alive while a single large file is downloading.
+            val heartbeat = launch(Dispatchers.IO) {
+                while (true) {
+                    kotlinx.coroutines.delay(1500)
+                    if (_download.value.active) publish(_download.value.stage, _download.value.currentFile)
+                }
             }
 
             try {
                 val details = resolve(summary(id) ?: throw IllegalArgumentException("Unknown version $id"), HashSet())
                 val versionDir = VoidPaths.versionDir(root, id)
                 val jsonFile = File(versionDir, "$id.json")
-                jsonFile.writeText(voidJson.encodeToString(details))
+                // Save Mojang's ORIGINAL json. Re-serialising our model writes nulls that the
+                // engine's parser rejects, which used to break launching entirely.
+                val rawJson = runCatching {
+                    summary(id)?.let { Net.fetchText(it.url) }
+                }.getOrNull()
+                jsonFile.writeText(rawJson ?: voidJson.encodeToString(details))
 
                 val client = details.downloads?.client
                     ?: throw IllegalStateException("Version $id has no client download in its metadata")
@@ -250,6 +266,7 @@ class VersionRepository(context: Context) {
                     javaMajor = details.javaVersion?.majorVersion,
                 )
                 persistInstalled(_installed.value.filterNot { it.id == id } + record)
+                heartbeat.cancel()
                 _download.value = DownloadState(
                     active = false, versionId = id, stage = "Installed", filesDone = filesDone.get(),
                     filesTotal = totalFiles, bytesDone = bytesDone.get(), bytesTotal = totalBytes,
@@ -284,6 +301,28 @@ class VersionRepository(context: Context) {
         runCatching { File(VoidPaths.versions(root), id).deleteRecursively() }
         persistInstalled(_installed.value.filterNot { it.id == id })
         return true
+    }
+
+    /** Rewrites version JSONs written by the old serialiser with Mojang's original text. */
+    suspend fun repairVersionJson(): Int = withContext(Dispatchers.IO) {
+        var repaired = 0
+        _installed.value.forEach { record ->
+            runCatching {
+                val json = File(record.jsonPath)
+                if (!json.isFile) return@runCatching
+                val text = json.readText()
+                val broken = text.contains("\"id\": null") ||
+                    text.contains("\"id\":null") ||
+                    !text.contains("\"id\"")
+                if (!broken) return@runCatching
+                val summary = summary(record.id)
+                if (summary != null) {
+                    json.writeText(Net.fetchText(summary.url))
+                    repaired++
+                }
+            }
+        }
+        repaired
     }
 
     /** Rebuilds the installed index from disk, picking up versions installed by the loader installer. */

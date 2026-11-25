@@ -83,7 +83,14 @@ fun LibraryScreen(state: UiState, vm: VoidViewModel) {
             onDismissRequest = { confirm = null },
             containerColor = VoidDesign.Panel,
             title = { Text("Delete $kind?", style = VoidDesign.Title) },
-            text = { Text(value, style = VoidDesign.Caption) },
+            text = {
+                Text(
+                    if (kind == "profile")
+                        state.profiles.firstOrNull { it.id == value }?.name ?: value
+                    else value,
+                    style = VoidDesign.Caption,
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     when (kind) {
@@ -209,7 +216,7 @@ private fun ProfilesSection(state: UiState, vm: VoidViewModel, onRemove: (String
                 .padding(bottom = 8.dp)
                 .combinedClickable(
                     onClick = { vm.selectProfile(profile.id) },
-                    onLongClick = { onRemove("profile", profile.name) },
+                    onLongClick = { onRemove("profile", profile.id) },
                 ),
         ) {
             VoidPanel {
@@ -293,6 +300,8 @@ private fun ModsSection(state: UiState, vm: VoidViewModel) {
         state.modResults.take(40).forEach { result ->
             VoidPanel(Modifier.padding(bottom = 8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    ModBox(result.iconUrl)
+                    Spacer(Modifier.size(10.dp))
                     Column(Modifier.weight(1f)) {
                         Text(result.name, style = VoidDesign.Title)
                         Spacer(Modifier.height(3.dp))
@@ -306,6 +315,27 @@ private fun ModsSection(state: UiState, vm: VoidViewModel) {
         }
         if (state.modResults.isEmpty() && state.modQuery.isNotBlank() && !state.modSearching) {
             Text("Press GO to search.", style = VoidDesign.Caption)
+        }
+    }
+}
+
+@Composable
+private fun ModBox(iconUrl: String?) {
+    Box(
+        Modifier
+            .size(38.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(VoidDesign.PanelRaised),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (iconUrl.isNullOrBlank()) {
+            Text("? ", style = VoidDesign.Label)
+        } else {
+            coil3.compose.AsyncImage(
+                model = iconUrl,
+                contentDescription = null,
+                modifier = Modifier.size(38.dp).clip(RoundedCornerShape(8.dp)),
+            )
         }
     }
 }
@@ -363,12 +393,25 @@ private fun LoadersSection(state: UiState, vm: VoidViewModel) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = VoidDesign.Ink)
             Spacer(Modifier.size(10.dp))
-            Text("Installing", style = VoidDesign.Caption)
+            Text("Installing loader", style = VoidDesign.Caption)
+        }
+        return
+    }
+    if (state.loaderLoading) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = VoidDesign.Ink)
+            Spacer(Modifier.size(10.dp))
+            Text("Fetching ${state.activeLoader} builds", style = VoidDesign.Caption)
         }
         return
     }
     if (state.loaderOptions.isEmpty()) {
-        Text("No builds found for this version.", style = VoidDesign.Caption)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("No ${state.activeLoader} build listed for ${state.selectedVersionId ?: "this version"}.",
+                style = VoidDesign.Caption, modifier = Modifier.weight(1f))
+            Text("RETRY", style = VoidDesign.Label.copy(color = VoidDesign.Ink),
+                modifier = Modifier.clickable { vm.setLoader(state.activeLoader) })
+        }
         return
     }
     state.loaderOptions.take(12).forEach { option ->

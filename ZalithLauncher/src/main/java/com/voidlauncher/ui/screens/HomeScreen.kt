@@ -114,27 +114,49 @@ fun HomeScreen(state: UiState, vm: VoidViewModel, onNavigate: (String) -> Unit) 
             modifier = Modifier.fillMaxWidth(),
         )
 
-        if (download.active || download.error != null || java.active || java.error != null) {
+        val active = if (download.active) download else if (java.active) java else null
+        val finished = if (!download.active && download.error != null) download
+        else if (!java.active && java.error != null) java else null
+
+        if (active != null) {
             Spacer(Modifier.height(22.dp))
             VoidSectionTitle("Progress")
             VoidPanel {
-                val d = if (download.active || download.error != null) download else java
-                Text(d.stage.ifBlank { "Working" }, style = VoidDesign.Body)
+                Text(active.stage.ifBlank { "Working" }, style = VoidDesign.Body)
                 Spacer(Modifier.height(10.dp))
                 LinearProgressIndicator(
-                    progress = { d.percent },
+                    progress = { active.percent },
                     modifier = Modifier.fillMaxWidth().height(3.dp),
                     color = VoidDesign.Ink,
                     trackColor = VoidDesign.PanelRaised,
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "${(d.percent * 100).toInt()}% · ${Net.formatBytes(d.bytesDone)} / ${Net.formatBytes(d.bytesTotal)}",
+                    "${(active.percent * 100).toInt()}% - ${Net.formatBytes(active.bytesDone)} / ${Net.formatBytes(active.bytesTotal)}",
                     style = VoidDesign.Caption,
                 )
-                d.error?.let { Spacer(Modifier.height(6.dp)); Text(it, color = VoidDesign.Danger, style = VoidDesign.Caption) }
-                Spacer(Modifier.height(6.dp))
-                VoidSecondaryButton("Cancel", { if (download.active) vm.cancelInstall() else vm.clearJavaDownload() })
+                if (active.filesTotal > 0) {
+                    Text("${active.filesDone} / ${active.filesTotal} files", style = VoidDesign.Caption)
+                }
+                Spacer(Modifier.height(10.dp))
+                VoidSecondaryButton("Cancel", {
+                    if (download.active) vm.cancelInstall() else vm.clearJavaDownload()
+                })
+            }
+        } else if (finished != null) {
+            Spacer(Modifier.height(22.dp))
+            VoidSectionTitle("Progress")
+            VoidPanel {
+                Text(finished.stage.ifBlank { "Finished" }, style = VoidDesign.Body)
+                finished.error?.let {
+                    Spacer(Modifier.height(6.dp))
+                    Text(it, color = VoidDesign.Danger, style = VoidDesign.Caption)
+                }
+                Spacer(Modifier.height(10.dp))
+                VoidSecondaryButton("Dismiss", {
+                    vm.clearDownload()
+                    vm.clearJavaDownload()
+                })
             }
         }
 
@@ -147,10 +169,9 @@ fun HomeScreen(state: UiState, vm: VoidViewModel, onNavigate: (String) -> Unit) 
             Metric("${state.mods.size}", "MODS")
         }
         Spacer(Modifier.height(24.dp))
+        }
     }
 }
-
-    }
 
 @Composable
 private fun PrimaryLaunch(busy: Boolean, installed: Boolean, state: UiState, vm: VoidViewModel) {

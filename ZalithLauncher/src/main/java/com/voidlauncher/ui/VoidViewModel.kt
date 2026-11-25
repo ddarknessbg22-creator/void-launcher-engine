@@ -65,6 +65,7 @@ data class UiState(
     val loaderOptions: List<com.voidlauncher.engine.VoidLoaderOption> = emptyList(),
     val activeLoader: String = "Vanilla",
     val loaderBusy: Boolean = false,
+    val loaderLoading: Boolean = false,
     val modQuery: String = "",
     val modResults: List<com.voidlauncher.engine.VoidModResult> = emptyList(),
     val modSearching: Boolean = false,
@@ -183,13 +184,15 @@ class VoidViewModel(
             )
         }
         refreshVersions()
-        // Resume a launch that was interrupted by process death (downloads live in the service).
-        pendingHandoffVersion?.let { id ->
-            _ui.update { it.copy(selectedVersionId = id) }
-            settingsRepo.selectedVersionId = id
-            viewModelScope.launch {
-                kotlinx.coroutines.delay(1500)
-                proceedToEngine()
+        // A queued launch is only resumed when the user actually presses Play.
+        pendingHandoffVersion = null
+
+        // Repair version JSONs written by older VOID builds so the engine can parse them.
+        viewModelScope.launch {
+            val repaired = versions.repairVersionJson()
+            if (repaired > 0) {
+                versions.refreshInstalledFromDisk()
+                notify("Repaired $repaired version file(s)")
             }
         }
     }
@@ -331,8 +334,15 @@ class VoidViewModel(
             .onFailure { notify(it.message ?: "Could not save profile") }
     }
 
-    fun deleteProfile(id: String) {
-        if (settingsRepo.deleteProfile(id)) notify("Profile deleted")
+    fun deleteProfile(idOrName: String) {
+        val profile = settingsRepo.profiles.value.profiles.firstOrNull { it.id == idOrName }
+            ?: settingsRepo.profiles.value.profiles.firstOrNull { it.name.equals(idOrName, true) }
+        if (profile == null) {
+            notify("Profile not found")
+            return
+        }
+        if (settingsRepo.deleteProfile(profile.id)) notify("Profile '${profile.name}' deleted")
+        else notify("Could not delete profile")
     }
 
     fun selectProfile(id: String) {
@@ -364,13 +374,27 @@ class VoidViewModel(
     }
 
     fun setLoader(name: String) {
-        _ui.update { it.copy(activeLoader = name, loaderOptions = emptyList()) }
+        _ui.update {
+            it.copy(
+                activeLoader = name,
+                loaderOptions = emptyList(),
+                loaderLoading = name != "Vanilla",
+            )
+        }
         val version = _ui.value.selectedVersionId
-        if (name == "Vanilla" || version == null) return
+        if (name == "Vanilla" || version == null) {
+            _ui.update { it.copy(loaderLoading = false) }
+            return
+        }
         viewModelScope.launch {
-            val options = com.voidlauncher.engine.VoidLoaderInstaller.list(name, version)
-            _ui.update { it.copy(loaderOptions = options) }
-            if (options.isEmpty()) notify("No $name build found for $version")
+            // Fetches can take a while on slow networks; keep a loading state and retry once.
+            var options = com.voidlauncher.engine.VoidLoaderInstaller.list(name, version)
+            if (options.isEmpty()) {
+                kotlinx.coroutines.delay(1200)
+                options = com.voidlauncher.engine.VoidLoaderInstaller.list(name, version)
+            }
+            _ui.update { it.copy(loaderOptions = options, loaderLoading = false) }
+            if (options.isEmpty()) notify("No $name build listed for $version")
         }
     }
 

@@ -13,6 +13,7 @@ data class VoidModResult(
     val summary: String,
     val platform: String,
     val platformKind: Platform,
+    val iconUrl: String? = null,
     val data: PlatformSearchData,
 )
 
@@ -34,6 +35,7 @@ object VoidModBrowser {
                         summary = "",
                         platform = Platform.MODRINTH.displayName,
                         platformKind = Platform.MODRINTH,
+                        iconUrl = data.platformIconUrl(),
                         data = data,
                     )
                 }
@@ -48,6 +50,7 @@ object VoidModBrowser {
                         summary = "",
                         platform = Platform.CURSEFORGE.displayName,
                         platformKind = Platform.CURSEFORGE,
+                        iconUrl = data.platformIconUrl(),
                         data = data,
                     )
                 }

@@ -27,6 +27,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import com.voidlauncher.ui.theme.VoidDesign
 
 /** Core VOID 2.0 components. Monochrome, sharp, restrained. */
@@ -185,5 +190,68 @@ fun VoidToggleRow(
                     .background(if (checked) VoidDesign.Canvas else VoidDesign.Muted),
             )
         }
+    }
+}
+
+/**
+ * A settings row that opens a list of choices instead of cycling one value per tap.
+ */
+@Composable
+fun VoidChoiceRow(
+    label: String,
+    value: String,
+    options: List<String>,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    detail: String? = null,
+) {
+    var open by remember { mutableStateOf(false) }
+
+    Column(modifier.fillMaxWidth().clickable { open = true }.padding(vertical = 12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(label, style = VoidDesign.Body, modifier = Modifier.weight(1f))
+            Text(value, style = VoidDesign.Caption.copy(color = VoidDesign.InkSoft))
+            Spacer(Modifier.width(8.dp))
+            Text(">", color = VoidDesign.Muted, style = VoidDesign.Body)
+        }
+        if (detail != null) Text(detail, style = VoidDesign.Caption)
+    }
+
+    if (open) {
+        AlertDialog(
+            onDismissRequest = { open = false },
+            containerColor = VoidDesign.Panel,
+            title = { Text(label, style = VoidDesign.Title) },
+            text = {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    options.forEach { option ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { onSelect(option); open = false }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                option,
+                                style = VoidDesign.Body,
+                                modifier = Modifier.weight(1f),
+                                color = if (option == value) VoidDesign.Ink else VoidDesign.InkSoft,
+                            )
+                            if (option == value) Text("ACTIVE", style = VoidDesign.Label)
+                        }
+                        VoidDivider()
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { open = false }) { Text("Close", color = VoidDesign.Ink) }
+            },
+        )
     }
 }

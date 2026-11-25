@@ -33,6 +33,7 @@ import com.voidlauncher.model.AccountType
 import com.voidlauncher.model.FeatureStatus
 import com.voidlauncher.ui.UiState
 import com.voidlauncher.ui.VoidViewModel
+import com.voidlauncher.ui.components.VoidChoiceRow
 import com.voidlauncher.ui.components.VoidContentFrame
 import com.voidlauncher.ui.components.VoidDivider
 import com.voidlauncher.ui.components.VoidPanel
@@ -280,10 +281,16 @@ private fun NetworkSettings(state: UiState, vm: VoidViewModel) {
             onChange = { value -> vm.updateAdvanced { it.copy(verifyDownloads = value) } },
         )
         VoidDivider()
-        VoidRow("Parallel threads", "${state.advanced.downloadThreads}", onClick = {
-            val next = if (state.advanced.downloadThreads >= 16) 1 else state.advanced.downloadThreads + 1
-            vm.updateAdvanced { a -> a.copy(downloadThreads = next) }
-        })
+        VoidChoiceRow(
+            label = "Parallel downloads",
+            value = "${state.advanced.downloadThreads} at once",
+            detail = "Higher is faster on good Wi-Fi; 4 is a safe default",
+            options = listOf("1", "2", "4", "6", "8", "12", "16"),
+            onSelect = { picked ->
+                vm.updateAdvanced { a -> a.copy(downloadThreads = picked.toInt()) }
+                vm.notify("Parallel downloads set to $picked")
+            },
+        )
     }
 }
 
@@ -346,10 +353,13 @@ private fun SystemSettings(state: UiState, vm: VoidViewModel, context: android.c
             }
         })
         VoidDivider()
-        VoidRow("Memory", "${state.settings.memoryMb} MB", onClick = {
-            val next = if (state.settings.memoryMb >= 6144) 1024 else state.settings.memoryMb + 1024
-            vm.updateSettings { it.copy(memoryMb = next) }
-        })
+        VoidChoiceRow(
+            label = "Memory",
+            value = "${state.settings.memoryMb} MB",
+            detail = "More memory helps big modpacks but can be killed by Android",
+            options = listOf("1024", "1536", "2048", "3072", "4096", "6144"),
+            onSelect = { picked -> vm.updateSettings { it.copy(memoryMb = picked.toInt()) } },
+        )
         VoidDivider()
         VoidRow(
             "JVM arguments",
