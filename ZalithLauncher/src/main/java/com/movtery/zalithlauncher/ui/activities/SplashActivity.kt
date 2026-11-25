@@ -137,7 +137,7 @@ class SplashActivity : BaseAppCompatActivity() {
 
         lifecycleScope.launch(Dispatchers.Main) {
             if (!Architecture.isBuildArchCompatible(BuildKeys.BUILD_ARCH, Architecture.getDeviceArchitecture())) {
-                showFatalError(this@SplashActivity, getString(R.string.splash_arch_mismatch_title))
+                showFatalError(this@SplashActivity, IllegalStateException(getString(R.string.splash_arch_mismatch_title)))
                 return@launch
             }
             withContext(Dispatchers.IO) {
