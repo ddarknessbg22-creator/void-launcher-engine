@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="void_bg">#FF090B12</color>
+    <color name="void_secondary">#FF10131D</color>
+    <color name="void_surface">#FF171B29</color>
+    <color name="void_purple">#FFA78BFA</color>
+    <color name="void_emerald">#FF34D399</color>
+    <color name="void_cyan">#FF67E8F9</color>
+    <color name="void_text">#FFF1F2F9</color>
+</resources>

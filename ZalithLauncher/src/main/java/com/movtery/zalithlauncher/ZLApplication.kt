@@ -49,12 +49,10 @@ import com.movtery.zalithlauncher.utils.logging.Logger
 import com.movtery.zalithlauncher.utils.network.TLSSecurity
 import com.movtery.zalithlauncher.utils.writeCrashFile
 import com.tencent.mmkv.MMKV
-import dagger.hilt.android.HiltAndroidApp
 import okio.Path.Companion.toOkioPath
 import kotlin.properties.Delegates
 
-@HiltAndroidApp
-class ZLApplication : Application(), SingletonImageLoader.Factory {
+open class ZLApplication : Application(), SingletonImageLoader.Factory {
     companion object {
         @JvmStatic
         var DEVICE_ARCHITECTURE by Delegates.notNull<Int>()
