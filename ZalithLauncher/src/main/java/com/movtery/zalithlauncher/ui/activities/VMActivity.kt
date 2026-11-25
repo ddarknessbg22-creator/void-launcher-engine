@@ -1199,12 +1199,14 @@ class VMActivity : BaseAppCompatActivity(), SurfaceTextureListener {
 
             when (operation) {
                 VMOperation.Loading -> {
-                    EmptyLoadingScreen(
-                        modifier = Modifier.background(backgroundColor())
-                    )
+                    com.voidlauncher.ui.screens.VoidGameLoading(modifier = Modifier)
                 }
                 is VMOperation.Layout -> {
                     content(operation)
+                    val rendering by com.voidlauncher.engine.VoidGameReady.rendering.collectAsStateWithLifecycle()
+                    if (!rendering) {
+                        com.voidlauncher.ui.screens.VoidGameLoading(modifier = Modifier)
+                    }
                 }
             }
 

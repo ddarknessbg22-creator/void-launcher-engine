@@ -149,8 +149,15 @@ class ErrorActivity : BaseAppCompatActivity() {
                         }
                     },
                     onRestart = {
+                        runCatching {
+                            (application as com.voidlauncher.VoidApplication).settings.pendingHandoffVersion = null
+                        }
+                        runCatching {
+                            stopService(Intent(this@ErrorActivity, com.voidlauncher.DownloadService::class.java))
+                        }
                         startActivity(Intent(this@ErrorActivity, com.voidlauncher.MainActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+                            putExtra("void_restart_from_crash", true)
                         })
                     },
                 )

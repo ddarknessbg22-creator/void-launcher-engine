@@ -35,6 +35,7 @@ object VoidEngineBridge {
             ?: error("VOID needs an Activity context to start the game")
         TokenVault.init(context.applicationContext)
         // Ensure the engine renderer registry is initialized before GameLaunchFlow.
+        com.voidlauncher.engine.VoidGameReady.reset()
         Renderers.init()
 
         val gameHome = VoidPaths.root(context).absolutePath

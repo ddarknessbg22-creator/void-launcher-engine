@@ -104,7 +104,9 @@ class GameHandler(
 //            set("options.narrator", "0")
 //            set("narrator", "0")
 
-            if (version.getVersionInfo()!!.minecraftVersion.isLowerVer("1.13")) {
+            val minecraftVersion = version.getVersionInfo()?.minecraftVersion
+                ?: version.getVersionName()
+            if (minecraftVersion.isLowerVer("1.13")) {
                 //fix: 牢版本按键事件
                 //shift + w -> 87 错误的触发了F11，切换全屏
                 set("key_key.fullscreen", "0")
@@ -149,6 +151,7 @@ class GameHandler(
     override fun onGraphicOutput() {
         if (!isGameRendering) {
             isGameRendering = true
+            com.voidlauncher.engine.VoidGameReady.markRendering()
             showGameInfo = false
             //游戏已经开始渲染，如果日志状态为渲染前显示，则在这里关闭日志
             if (logState == LogState.SHOW_BEFORE_LOADING) {
