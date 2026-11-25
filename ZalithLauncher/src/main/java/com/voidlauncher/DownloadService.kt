@@ -7,9 +7,11 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import com.movtery.zalithlauncher.R
 import com.voidlauncher.model.DownloadState
 import com.voidlauncher.util.Net
@@ -72,12 +74,32 @@ class DownloadService : Service() {
                 NotificationChannel(CHANNEL, "Downloads", NotificationManager.IMPORTANCE_LOW),
             )
         }
-        startForeground(NOTIFICATION_ID, notification("Starting download", 0f, 0L, 0L))
+        val started = runCatching {
+            ServiceCompat.startForeground(
+                this,
+                NOTIFICATION_ID,
+                notification("Starting download", 0f, 0L, 0L),
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                } else {
+                    0
+                },
+            )
+        }.isSuccess
+        if (!started) {
+            // Never let a notification failure crash the app; abort the service cleanly.
+            stopSelf()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         workJob?.cancel()
         observerJob?.cancel()
+
+        if (intent == null) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         when (intent?.action) {
             ACTION_VERSION -> {
