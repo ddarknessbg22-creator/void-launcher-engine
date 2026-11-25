@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.voidlauncher.ui.UiState
 import com.voidlauncher.ui.VoidViewModel
+import com.voidlauncher.ui.components.VoidContentFrame
 import com.voidlauncher.ui.components.VoidDivider
 import com.voidlauncher.ui.components.VoidPill
 import com.voidlauncher.ui.theme.VoidDesign
@@ -46,7 +47,8 @@ fun VersionsScreen(state: UiState, vm: VoidViewModel) {
         typeOk && (state.search.isBlank() || v.id.contains(state.search, true))
     }
 
-    Column(Modifier.fillMaxSize().background(VoidDesign.Canvas)) {
+    VoidContentFrame {
+        Column(Modifier.fillMaxSize().background(VoidDesign.Canvas)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 22.dp)) {
             Spacer(Modifier.height(20.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -159,3 +161,4 @@ fun VersionsScreen(state: UiState, vm: VoidViewModel) {
         }
     }
 }
+    }

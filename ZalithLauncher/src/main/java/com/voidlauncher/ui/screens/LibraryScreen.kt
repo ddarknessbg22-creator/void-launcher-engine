@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.voidlauncher.ui.UiState
 import com.voidlauncher.ui.VoidViewModel
+import com.voidlauncher.ui.components.VoidContentFrame
 import com.voidlauncher.ui.components.VoidDivider
 import com.voidlauncher.ui.components.VoidPanel
 import com.voidlauncher.ui.components.VoidPill
@@ -51,9 +52,10 @@ fun LibraryScreen(state: UiState, vm: VoidViewModel) {
         if (uri != null) vm.importMod(uri, uri.lastPathSegment?.substringAfterLast('/') ?: "mod.jar")
     }
 
-    Column(
-        Modifier
-            .fillMaxSize()
+    VoidContentFrame {
+        Column(
+            Modifier
+                .fillMaxSize()
             .background(VoidDesign.Canvas)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 22.dp),
@@ -202,4 +204,5 @@ fun LibraryScreen(state: UiState, vm: VoidViewModel) {
             dismissButton = { TextButton(onClick = { confirm = null }) { Text("Cancel", color = VoidDesign.Muted) } },
         )
     }
+}
 }

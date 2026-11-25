@@ -33,6 +33,7 @@ import com.voidlauncher.model.AccountType
 import com.voidlauncher.model.FeatureStatus
 import com.voidlauncher.ui.UiState
 import com.voidlauncher.ui.VoidViewModel
+import com.voidlauncher.ui.components.VoidContentFrame
 import com.voidlauncher.ui.components.VoidDivider
 import com.voidlauncher.ui.components.VoidPanel
 import com.voidlauncher.ui.components.VoidPill
@@ -58,7 +59,8 @@ fun SettingsScreen(
     var javaDialog by remember { mutableStateOf(false) }
     var deleteAccount by remember { mutableStateOf<String?>(null) }
 
-    Column(Modifier.fillMaxSize().background(VoidDesign.Canvas)) {
+    VoidContentFrame {
+        Column(Modifier.fillMaxSize().background(VoidDesign.Canvas)) {
         Spacer(Modifier.height(20.dp))
         Text(
             "SETTINGS",
@@ -388,3 +390,4 @@ private fun AboutSettings(vm: VoidViewModel) {
     Spacer(Modifier.height(10.dp))
     Text("VOID Launcher 1.0.0 · Kotlin · Compose · GPL-3.0 engine", style = VoidDesign.Caption)
 }
+    }

@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.voidlauncher.model.AccountType
 import com.voidlauncher.ui.UiState
 import com.voidlauncher.ui.VoidViewModel
+import com.voidlauncher.ui.components.VoidContentFrame
 import com.voidlauncher.ui.components.VoidDivider
 import com.voidlauncher.ui.components.VoidPanel
 import com.voidlauncher.ui.components.VoidPill
@@ -43,13 +44,14 @@ fun HomeScreen(state: UiState, vm: VoidViewModel, onNavigate: (String) -> Unit) 
     val download = state.download
     val java = state.javaDownload
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(VoidDesign.Canvas)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 22.dp),
-    ) {
+    VoidContentFrame {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .background(VoidDesign.Canvas)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 22.dp),
+        ) {
         Spacer(Modifier.height(20.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -147,6 +149,8 @@ fun HomeScreen(state: UiState, vm: VoidViewModel, onNavigate: (String) -> Unit) 
         Spacer(Modifier.height(24.dp))
     }
 }
+
+    }
 
 @Composable
 private fun PrimaryLaunch(busy: Boolean, installed: Boolean, state: UiState, vm: VoidViewModel) {
