@@ -129,55 +129,31 @@ class ErrorActivity : BaseAppCompatActivity() {
         val logExists = logFile.exists() && logFile.isFile
 
         setContent {
-            ZalithLauncherTheme {
-                ShareLinkOperation(
-                    operation = viewModel.operation,
-                    onChange = { viewModel.operation = it },
-                    onUploadChancel = { viewModel.cancel() },
-                    onUpload = {
-                        viewModel.upload(logFile) { link ->
-                            openLink(link)
-                            copyText(COPY_LABEL_LINK, link, this@ErrorActivity)
+            com.voidlauncher.ui.theme.VoidTheme {
+                com.voidlauncher.ui.screens.VoidCrashScreen(
+                    title = if (exitType == EXIT_JVM) "Game stopped" else "VOID hit a problem",
+                    message = errorMessage.message + "\n" + errorMessage.messageBody,
+                    logPath = logFile.absolutePath,
+                    onSaveLog = {
+                        val saved = com.voidlauncher.ui.screens.VoidCrashLogs.save(
+                            this@ErrorActivity,
+                            logFile.absolutePath,
+                            errorMessage.message,
+                        )
+                        if (saved == null) {
+                            com.voidlauncher.ui.screens.VoidCrashLogs.save(
+                                this@ErrorActivity,
+                                null,
+                                "No log file was available for this crash.",
+                            )
                         }
-                    }
+                    },
+                    onRestart = {
+                        startActivity(Intent(this@ErrorActivity, com.voidlauncher.MainActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+                        })
+                    },
                 )
-
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = backgroundColor(),
-                    contentColor = onBackgroundColor()
-                ) {
-                    ErrorScreen(
-                        crashType = errorMessage.crashType,
-                        shareLogs = logExists,
-                        canUpload = viewModel.canUpload,
-                        canRestart = canRestart,
-                        onShareLogsClick = {
-                            if (logExists) {
-                                shareFile(this@ErrorActivity, logFile)
-                            }
-                        },
-                        onUploadClick = {
-                            viewModel.operation = ShareLinkOperation.Tip
-                        },
-                        onRestartClick = {
-                            ProcessPhoenix.triggerRebirth(this@ErrorActivity)
-                        },
-                        onExitClick = { finish() },
-                        onOrientationChanged = {
-                            this@ErrorActivity.requestedOrientation = it
-                        },
-                    ) {
-                        Text(
-                            text = errorMessage.message,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = errorMessage.messageBody,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
             }
         }
     }

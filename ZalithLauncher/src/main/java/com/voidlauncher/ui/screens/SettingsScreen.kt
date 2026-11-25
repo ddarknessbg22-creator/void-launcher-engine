@@ -285,27 +285,78 @@ private fun NetworkSettings(state: UiState, vm: VoidViewModel) {
 
 @Composable
 private fun SystemSettings(state: UiState, vm: VoidViewModel, context: android.content.Context) {
-    VoidSectionTitle("System")
+    val renderers = remember { com.voidlauncher.engine.VoidRenderers.options() }
+    val current = remember(state.preferredEngine) {
+        com.voidlauncher.engine.VoidRenderers.current()
+    }
+    var jvmDialog by remember { mutableStateOf(false) }
+    var jvmText by remember { mutableStateOf(state.settings.jvmArgs) }
+
+    VoidSectionTitle("Renderer")
     VoidPanel {
-        VoidRow("OpenGL implementation", state.advanced.glImplementation, onClick = {
-            val next = when (state.advanced.glImplementation) {
-                "MobileGlues" -> "ANGLE"
-                "ANGLE" -> "GL4ES"
-                else -> "MobileGlues"
-            }
-            vm.setGlImplementation(next)
-        })
-        VoidDivider()
+        val mobileGlues = renderers.firstOrNull { it.isMobileGlues }
+        VoidRow(
+            "MobileGlues",
+            when {
+                mobileGlues == null -> "Not in this engine"
+                mobileGlues.available -> "Available"
+                else -> "Present / files missing"
+            },
+        )
+        renderers.forEach { renderer ->
+            VoidRow(
+                label = renderer.name,
+                value = when {
+                    renderer.uniqueId == current -> "ACTIVE"
+                    renderer.available -> "Use"
+                    else -> "Unavailable"
+                },
+                onClick = { if (renderer.available) vm.setRenderer(renderer.uniqueId) },
+            )
+            VoidDivider()
+        }
+    }
+
+    Spacer(Modifier.height(18.dp))
+    VoidSectionTitle("Engine")
+    VoidPanel {
         VoidRow("Memory", "${state.settings.memoryMb} MB", onClick = {
             val next = if (state.settings.memoryMb >= 6144) 1024 else state.settings.memoryMb + 1024
             vm.updateSettings { it.copy(memoryMb = next) }
         })
         VoidDivider()
-        VoidRow("JVM arguments", if (state.settings.jvmArgs.isBlank()) "None" else state.settings.jvmArgs)
+        VoidRow(
+            "JVM arguments",
+            if (state.settings.jvmArgs.isBlank()) "None" else state.settings.jvmArgs,
+            onClick = { jvmText = state.settings.jvmArgs; jvmDialog = true },
+        )
         VoidDivider()
         VoidRow("Verify installed files", "Check jars and metadata", onClick = { vm.verifyInstalls() })
         VoidDivider()
         VoidRow("Clean partial downloads", "Remove interrupted files", onClick = { vm.clearCaches(context) })
+    }
+
+    if (jvmDialog) {
+        AlertDialog(
+            onDismissRequest = { jvmDialog = false },
+            containerColor = VoidDesign.Panel,
+            title = { Text("JVM arguments", style = VoidDesign.Title) },
+            text = {
+                OutlinedTextField(
+                    value = jvmText,
+                    onValueChange = { jvmText = it },
+                    label = { Text("Extra JVM flags", style = VoidDesign.Caption) },
+                    maxLines = 4,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.updateSettings { it.copy(jvmArgs = jvmText.trim()) }
+                    jvmDialog = false
+                }) { Text("Save", color = VoidDesign.Ink) }
+            },
+            dismissButton = { TextButton(onClick = { jvmDialog = false }) { Text("Cancel", color = VoidDesign.Muted) } },
+        )
     }
 }
 

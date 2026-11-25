@@ -166,7 +166,9 @@ class VoidViewModel(
                 engines = engines.detect(),
                 preferredEngine = settingsRepo.preferredEngine,
                 lastLaunchMessage = settingsRepo.lastLaunchMessage,
-                javaRuntimes = javaRepo.scan(),
+                javaRuntimes = (javaRepo.scan() + com.voidlauncher.engine.VoidRuntimes.installed())
+                    .distinctBy { it.path }
+                    .sortedByDescending { it.majorVersion },
                 offlineNotice = settingsRepo.onboardingDone.not(),
             )
         }
@@ -292,17 +294,12 @@ class VoidViewModel(
         settingsRepo.updateAdvanced(transform)
     }
 
-    /** Renderer choice really selects the engine that is started on launch. */
-    fun setGlImplementation(value: String) {
-        settingsRepo.updateAdvanced { it.copy(glImplementation = value) }
-        val preferred = when (value) {
-            "MobileGlues" -> "com.movtery.zalithlauncher"
-            "ANGLE", "GL4ES" -> "net.kdt.pojavlaunch"
-            else -> null
-        }
-        settingsRepo.preferredEngine = preferred
-        _ui.update { it.copy(preferredEngine = preferred) }
-        notify("Renderer set to $value · engine preference updated")
+    /** Sets a renderer that actually exists in the engine registry. */
+    fun setRenderer(uniqueId: String) {
+        com.voidlauncher.engine.VoidRenderers.select(uniqueId)
+        settingsRepo.updateAdvanced { it.copy(glImplementation = uniqueId) }
+        _ui.update { it.copy(preferredEngine = uniqueId) }
+        notify("Renderer changed to ${com.voidlauncher.engine.VoidRenderers.options().firstOrNull { it.uniqueId == uniqueId }?.name ?: uniqueId}")
     }
 
     fun createProfile(name: String) {
@@ -335,8 +332,11 @@ class VoidViewModel(
     // ---------------------------------------------------------------- java
 
     fun scanJava() {
-        val found = javaRepo.scan()
-        notify(if (found.isEmpty()) "No Java runtime found: add a path or install one" else "Found ${found.size} Java runtime(s)")
+        val found = (javaRepo.scan() + com.voidlauncher.engine.VoidRuntimes.installed())
+            .distinctBy { it.path }
+            .sortedByDescending { it.majorVersion }
+        _ui.update { it.copy(javaRuntimes = found) }
+        notify(if (found.isEmpty()) "No Java runtime unpacked yet - it unpacks on first launch" else "Found ${found.size} runtime(s)")
     }
 
     fun addJavaPath(path: String) {
