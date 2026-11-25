@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.voidlauncher.ui.theme.VoidDesign
 
 /** Core VOID 2.0 components. Monochrome, sharp, restrained. */

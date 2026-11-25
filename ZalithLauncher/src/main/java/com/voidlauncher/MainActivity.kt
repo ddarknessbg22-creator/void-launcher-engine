@@ -56,6 +56,7 @@ import com.voidlauncher.ui.screens.VersionsScreen
 import com.voidlauncher.ui.theme.VoidDesign
 import com.voidlauncher.ui.theme.VoidTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 

@@ -226,10 +226,12 @@ private fun AccountSettings(
 private fun LauncherSettings(state: UiState, vm: VoidViewModel, context: android.content.Context) {
     VoidSectionTitle("Automation")
     VoidPanel {
-        VoidToggleRow("Auto-install game", "Game files download when you press Play",
-            state.advanced.autoInstallGame) { value ->
-                vm.updateAdvanced { it.copy(autoInstallGame = value) }
-            }
+        VoidToggleRow(
+            label = "Auto-install game",
+            detail = "Game files download when you press Play",
+            checked = state.advanced.autoInstallGame,
+            onChange = { value -> vm.updateAdvanced { it.copy(autoInstallGame = value) } },
+        )
         VoidDivider()
         VoidRow("JVM arguments", if (state.settings.jvmArgs.isBlank()) "None" else state.settings.jvmArgs)
     }
@@ -257,13 +259,19 @@ private fun JavaSettings(state: UiState, vm: VoidViewModel, onAdd: () -> Unit) {
 private fun NetworkSettings(state: UiState, vm: VoidViewModel) {
     VoidSectionTitle("Downloads")
     VoidPanel {
-        VoidToggleRow("Auto-retry", "Retry failed downloads", state.advanced.autoRetry) {
-            vm.updateAdvanced { a -> a.copy(autoRetry = it) }
-        }
+        VoidToggleRow(
+            label = "Auto-retry",
+            detail = "Retry failed downloads",
+            checked = state.advanced.autoRetry,
+            onChange = { value -> vm.updateAdvanced { it.copy(autoRetry = value) } },
+        )
         VoidDivider()
-        VoidToggleRow("Verify files", "SHA-1 check every download", state.advanced.verifyDownloads) {
-            vm.updateAdvanced { a -> a.copy(verifyDownloads = it) }
-        }
+        VoidToggleRow(
+            label = "Verify files",
+            detail = "SHA-1 check every download",
+            checked = state.advanced.verifyDownloads,
+            onChange = { value -> vm.updateAdvanced { it.copy(verifyDownloads = value) } },
+        )
         VoidDivider()
         VoidRow("Parallel threads", "${state.advanced.downloadThreads}", onClick = {
             val next = if (state.advanced.downloadThreads >= 16) 1 else state.advanced.downloadThreads + 1
