@@ -49,6 +49,7 @@
             android:launchMode="singleTop"
             android:theme="@style/Theme.VOID.Bootstrap"
             android:exported="true"
+            android:exported="true"
             android:windowSoftInputMode="adjustResize"
             android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|keyboard|navigation"
             android:screenOrientation="sensorLandscape">
@@ -222,6 +223,7 @@
                 android:resource="@xml/provider_paths" />
         </provider>
         <activity android:name="com.voidlauncher.MainActivity" android:exported="true"
+            android:theme="@style/Theme.VOID"
             android:configChanges="orientation|screenSize|screenLayout|uiMode|keyboard|keyboardHidden"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name="com.voidlauncher.auth.MicrosoftAuthActivity" android:exported="false"
