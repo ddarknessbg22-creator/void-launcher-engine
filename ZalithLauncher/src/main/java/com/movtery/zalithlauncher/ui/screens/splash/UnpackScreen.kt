@@ -41,6 +41,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.nonInteractiveScrollbar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -112,6 +113,18 @@ private fun ActionMenu(
     val installing = states.any { it == InstallableItem.State.RUNNING }
     val hasFailed = states.any { it == InstallableItem.State.FAILED }
     val ctx = rememberAnimatedContext(isVisible = isVisible)
+
+    // VOID: extract bundled components automatically on first run.
+    LaunchedEffect(items) {
+        if (!installing && states.any {
+                it == InstallableItem.State.NOT_STARTED ||
+                    it == InstallableItem.State.PENDING ||
+                    it == InstallableItem.State.FAILED
+            }
+        ) {
+            onAgreeClick()
+        }
+    }
 
     Column(
         modifier = modifier.animated(ctx, from = AnimatedDirection.Right),
