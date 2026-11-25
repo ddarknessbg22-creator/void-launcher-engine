@@ -107,11 +107,11 @@ class VoidViewModel(
                         latestRelease = manifest?.latest?.release ?: "",
                     )
                 }
-                // First run: preselect a sensible version so Home is never empty.
+                // First run: preselect an installed version or the latest release.
                 if (settingsRepo.selectedVersionId == null) {
-                    manifest?.latest?.release?.let { latest ->
-                        selectVersion(latest)
-                    }
+                    val installed = versions.installed.value.firstOrNull()?.id
+                    val choice = installed ?: manifest?.latest?.release
+                    choice?.let { selectVersion(it) }
                 }
             }
         }
