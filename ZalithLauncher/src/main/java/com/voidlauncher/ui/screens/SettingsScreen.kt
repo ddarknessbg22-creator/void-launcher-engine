@@ -43,7 +43,7 @@ import com.voidlauncher.ui.components.VoidSectionTitle
 import com.voidlauncher.ui.components.VoidToggleRow
 import com.voidlauncher.ui.theme.VoidDesign
 
-private val TABS = listOf("Account", "Launcher", "Java", "Network", "System", "Mods", "About")
+private val TABS = listOf("Account", "Launcher", "Java", "Network", "System", "About")
 
 /** VOID 2.0 Settings: native-settings hierarchy, every row controls real behavior. */
 @Composable
@@ -115,7 +115,6 @@ fun SettingsScreen(
                     onAdd = { javaDialog = true })
                 "Network" -> NetworkSettings(state, vm)
                 "System" -> SystemSettings(state, vm, context)
-                "Mods" -> ModBrowserScreen(state.selectedVersionId)
                 "About" -> AboutSettings(vm)
             }
             Spacer(Modifier.height(28.dp))

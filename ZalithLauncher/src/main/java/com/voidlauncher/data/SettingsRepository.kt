@@ -85,7 +85,8 @@ class SettingsRepository(context: Context) {
         name: String,
         accountId: String,
         versionId: String,
-        loader: String = "vanilla",
+        loader: String = "Vanilla",
+        mods: List<String> = emptyList(),
     ): Result<LaunchProfile> {
         val trimmed = name.trim()
         if (trimmed.isBlank()) return Result.failure(IllegalArgumentException("Give the profile a name"))
@@ -100,6 +101,8 @@ class SettingsRepository(context: Context) {
             versionId = versionId,
             memoryMb = s.memoryMb,
             jvmArgs = s.jvmArgs,
+            loader = loader,
+            mods = mods,
         )
         _profiles.value = _profiles.value.copy(
             profiles = _profiles.value.profiles + profile,

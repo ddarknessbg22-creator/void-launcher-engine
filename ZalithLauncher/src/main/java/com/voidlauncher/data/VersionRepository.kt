@@ -286,6 +286,36 @@ class VersionRepository(context: Context) {
         return true
     }
 
+    /** Rebuilds the installed index from disk, picking up versions installed by the loader installer. */
+    fun refreshInstalledFromDisk() {
+        val records = _installed.value.associateBy { it.id }.toMutableMap()
+        val versionsDir = VoidPaths.versions(root)
+        versionsDir.listFiles()?.forEach { dir ->
+            if (!dir.isDirectory) return@forEach
+            val id = dir.name
+            if (records.containsKey(id)) return@forEach
+            val json = File(dir, "$id.json")
+            val jar = File(dir, "$id.jar")
+            if (!json.isFile || !jar.isFile) return@forEach
+            val details = runCatching {
+                voidJson.decodeFromString<VersionDetails>(json.readText())
+            }.getOrNull() ?: return@forEach
+            records[id] = InstalledVersion(
+                id = id,
+                jsonPath = json.absolutePath,
+                jarPath = jar.absolutePath,
+                installedAt = dir.lastModified(),
+                libraryCount = details.libraries.size,
+                assetCount = 0,
+                totalBytes = dir.walkTopDown().filter { it.isFile }.sumOf { it.length() },
+                loader = id.substringAfter('-', "vanilla"),
+                mainClass = details.mainClass,
+                javaMajor = details.javaVersion?.majorVersion,
+            )
+        }
+        persistInstalled(records.values.sortedByDescending { it.installedAt })
+    }
+
     private fun loadInstalled(): List<InstalledVersion> = runCatching {
         if (installedFile.exists()) {
             voidJson.decodeFromString<List<InstalledVersion>>(installedFile.readText())

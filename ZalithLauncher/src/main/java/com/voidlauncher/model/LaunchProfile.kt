@@ -10,6 +10,8 @@ data class LaunchProfile(
     val versionId: String,
     val memoryMb: Int = 2048,
     val jvmArgs: String = "",
+    val loader: String = "Vanilla",
+    val mods: List<String> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
 )
 

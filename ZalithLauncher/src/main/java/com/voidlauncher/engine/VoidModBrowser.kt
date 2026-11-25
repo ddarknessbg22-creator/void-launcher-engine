@@ -12,6 +12,7 @@ data class VoidModResult(
     val name: String,
     val summary: String,
     val platform: String,
+    val platformKind: Platform,
     val data: PlatformSearchData,
 )
 
@@ -32,6 +33,7 @@ object VoidModBrowser {
                         name = info?.displayName()?.ifBlank { null } ?: "Modrinth mod",
                         summary = "",
                         platform = Platform.MODRINTH.displayName,
+                        platformKind = Platform.MODRINTH,
                         data = data,
                     )
                 }
@@ -45,6 +47,7 @@ object VoidModBrowser {
                         name = info?.displayName()?.ifBlank { null } ?: "CurseForge mod",
                         summary = "",
                         platform = Platform.CURSEFORGE.displayName,
+                        platformKind = Platform.CURSEFORGE,
                         data = data,
                     )
                 }

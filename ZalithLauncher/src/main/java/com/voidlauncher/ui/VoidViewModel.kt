@@ -62,6 +62,12 @@ data class UiState(
     val snackbar: String? = null,
     val lastLaunchMessage: String = "",
     val offlineNotice: Boolean = true,
+    val loaderOptions: List<com.voidlauncher.engine.VoidLoaderOption> = emptyList(),
+    val activeLoader: String = "Vanilla",
+    val loaderBusy: Boolean = false,
+    val modQuery: String = "",
+    val modResults: List<com.voidlauncher.engine.VoidModResult> = emptyList(),
+    val modSearching: Boolean = false,
 )
 
 class VoidViewModel(
@@ -313,7 +319,14 @@ class VoidViewModel(
             notify("Select an account and a version first")
             return
         }
-        settingsRepo.createProfile(name, accountId, versionId)
+        val entries = modsRepo.list(versionId)
+        settingsRepo.createProfile(
+            name = name,
+            accountId = accountId,
+            versionId = versionId,
+            loader = _ui.value.activeLoader,
+            mods = entries.filter { it.enabled }.map { it.fileName },
+        )
             .onSuccess { notify("Profile '${it.name}' saved") }
             .onFailure { notify(it.message ?: "Could not save profile") }
     }
@@ -328,8 +341,99 @@ class VoidViewModel(
             settingsRepo.selectedVersionId = profile.versionId
             settingsRepo.updateSettings { it.copy(memoryMb = profile.memoryMb, jvmArgs = profile.jvmArgs) }
             accounts.select(profile.accountId)
-            _ui.update { it.copy(selectedVersionId = profile.versionId, modsVersionId = profile.versionId) }
+            _ui.update {
+                it.copy(
+                    selectedVersionId = profile.versionId,
+                    modsVersionId = profile.versionId,
+                    activeLoader = profile.loader,
+                )
+            }
             loadMods(profile.versionId)
+            applyProfileMods(profile)
+        }
+    }
+
+    /** Applies a saved profile's mod selection to the version's mods folder. */
+    private fun applyProfileMods(profile: LaunchProfile) {
+        val entries = modsRepo.list(profile.versionId)
+        entries.forEach { entry ->
+            val shouldEnable = entry.fileName in profile.mods
+            if (entry.enabled != shouldEnable) modsRepo.toggle(profile.versionId, entry.fileName)
+        }
+        loadMods(profile.versionId)
+    }
+
+    fun setLoader(name: String) {
+        _ui.update { it.copy(activeLoader = name, loaderOptions = emptyList()) }
+        val version = _ui.value.selectedVersionId
+        if (name == "Vanilla" || version == null) return
+        viewModelScope.launch {
+            val options = com.voidlauncher.engine.VoidLoaderInstaller.list(name, version)
+            _ui.update { it.copy(loaderOptions = options) }
+            if (options.isEmpty()) notify("No $name build found for $version")
+        }
+    }
+
+    fun installLoader(loader: String, loaderVersion: String) {
+        val version = _ui.value.selectedVersionId ?: return
+        if (_ui.value.loaderBusy) return
+        _ui.update { it.copy(loaderBusy = true) }
+        viewModelScope.launch {
+            runCatching {
+                com.voidlauncher.engine.VoidLoaderInstaller.install(
+                    context = appContext,
+                    scope = viewModelScope,
+                    loader = loader,
+                    loaderVersion = loaderVersion,
+                    minecraftVersion = version,
+                )
+            }.onSuccess { created ->
+                versions.refreshInstalledFromDisk()
+                selectVersion(created)
+                notify("$loader $loaderVersion installed as $created")
+            }.onFailure { notify(it.message ?: "Loader install failed") }
+            _ui.update { it.copy(loaderBusy = false) }
+        }
+    }
+
+    fun setModQuery(value: String) {
+        _ui.update { it.copy(modQuery = value) }
+    }
+
+    fun searchMods() {
+        val query = _ui.value.modQuery.trim()
+        if (query.isEmpty()) {
+            _ui.update { it.copy(modResults = emptyList(), modSearching = false) }
+            return
+        }
+        viewModelScope.launch {
+            _ui.update { it.copy(modSearching = true) }
+            val results = com.voidlauncher.engine.VoidModBrowser.search(query, _ui.value.selectedVersionId)
+            _ui.update { it.copy(modResults = results, modSearching = false) }
+        }
+    }
+
+    fun downloadMod(result: com.voidlauncher.engine.VoidModResult) {
+        val versionId = _ui.value.selectedVersionId
+        val mcVersion = versionId
+        if (versionId == null || mcVersion == null) {
+            notify("Select an installed version first")
+            return
+        }
+        notify("Downloading ${result.name}...")
+        viewModelScope.launch {
+            runCatching {
+                com.voidlauncher.engine.VoidModInstaller.download(
+                    context = appContext,
+                    projectId = result.id,
+                    platform = result.platformKind,
+                    minecraftVersion = mcVersion,
+                    versionId = versionId,
+                )
+            }.onSuccess { file ->
+                loadMods(versionId)
+                notify("$file added to $versionId")
+            }.onFailure { notify(it.message ?: "Mod download failed") }
         }
     }
 
