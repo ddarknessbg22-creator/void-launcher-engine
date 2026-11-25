@@ -49,7 +49,6 @@
             android:launchMode="singleTop"
             android:theme="@style/Theme.VOID.Bootstrap"
             android:exported="true"
-            android:exported="true"
             android:windowSoftInputMode="adjustResize"
             android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|keyboard|navigation"
             android:screenOrientation="sensorLandscape">
