@@ -449,7 +449,7 @@ private fun AboutSettings(vm: VoidViewModel) {
 
     VoidSectionTitle("Credits")
     VoidPanel(Modifier.padding(bottom = 8.dp)) {
-        VoidRow("Engine", "Zalith Launcher 2 (GPL-3.0)")
+        VoidRow("Engine base", "Zalith Launcher 2 (GPL-3.0)")
         VoidDivider()
         VoidRow("Runtime", "Android OpenJDK builds")
         VoidDivider()
