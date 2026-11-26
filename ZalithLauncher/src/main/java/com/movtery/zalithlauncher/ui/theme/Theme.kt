@@ -617,6 +617,30 @@ fun ZalithLauncherTheme(
 
     val context = LocalContext.current
 
+    // VOID: the in-game overlay is always AMOLED black + white, never a festival/dynamic palette.
+    val voidScheme = darkColorScheme(
+        primary = Color(0xFFFFFFFF),
+        onPrimary = Color(0xFF000000),
+        primaryContainer = Color(0xFF111111),
+        onPrimaryContainer = Color(0xFFFFFFFF),
+        secondary = Color(0xFFE6E6E6),
+        onSecondary = Color(0xFF000000),
+        secondaryContainer = Color(0xFF0A0A0A),
+        onSecondaryContainer = Color(0xFFE6E6E6),
+        tertiary = Color(0xFFFFFFFF),
+        onTertiary = Color(0xFF000000),
+        background = Color(0xFF000000),
+        onBackground = Color(0xFFFFFFFF),
+        surface = Color(0xFF0A0A0A),
+        onSurface = Color(0xFFFFFFFF),
+        surfaceVariant = Color(0xFF111111),
+        onSurfaceVariant = Color(0xFF8C8C8C),
+        outline = Color(0xFF202020),
+        outlineVariant = Color(0xFF202020),
+        error = Color(0xFFFF5C5C),
+        onError = Color(0xFF000000),
+    )
+
     val targetColorScheme = remember(darkTheme, dynamicColor, colorTheme, customColor, customPaletteStyle) {
         when {
             dynamicColor && colorTheme == ColorThemeType.DYNAMIC && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
@@ -681,7 +705,7 @@ fun ZalithLauncherTheme(
         LocalOverscrollFactory provides MiuixOverscrollFactory,
     ) {
         MaterialExpressiveTheme(
-            colorScheme = currentDisplayScheme,
+            colorScheme = voidScheme,
             motionScheme = MotionScheme.expressive(),
             typography = AppTypography,
             content = content

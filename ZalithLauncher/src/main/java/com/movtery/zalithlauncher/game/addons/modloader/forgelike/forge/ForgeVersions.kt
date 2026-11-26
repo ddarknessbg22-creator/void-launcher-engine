@@ -54,13 +54,11 @@ object ForgeVersions {
      * 获取 Forge 版本列表
      */
     suspend fun fetchForgeList(mcVersion: String): List<ForgeVersion>? = withContext(Dispatchers.Default) {
-        if (isChinaMainland()) {
-            runMirrorable(
-                listOf(officialSource(mcVersion), bmclapiSource(mcVersion)).orderedByGameSourcePreference()
-            )
-        } else {
-            fetchListWithOfficial(mcVersion)
-        }?.sortedWith { o1, o2 ->
+        // VOID: try the lightweight JSON endpoint first (much faster than the HTML page),
+        // then fall back to the official HTML list.
+        runMirrorable(
+            listOf(bmclapiSource(mcVersion), officialSource(mcVersion)).orderedByGameSourcePreference()
+        )?.sortedWith { o1, o2 ->
             o2.forgeBuildVersion.compareTo(o1.forgeBuildVersion)
         }
     }
@@ -87,7 +85,7 @@ object ForgeVersions {
 
         try {
             val html = withContext(Dispatchers.IO) {
-                withRetry(TAG, maxRetries = 2) {
+                withRetry(TAG, maxRetries = 1) {
                     GLOBAL_CLIENT.get(url) {
                         headers {
                             append(HttpHeaders.UserAgent, "Mozilla/5.0/$URL_USER_AGENT")
@@ -126,7 +124,7 @@ object ForgeVersions {
 
         return try {
             val tokens: List<ForgeVersionToken> = withContext(Dispatchers.IO) {
-                withRetry(TAG, maxRetries = 2) {
+                withRetry(TAG, maxRetries = 1) {
                     GLOBAL_CLIENT.get(url).safeBodyAsJson()
                 }
             }
