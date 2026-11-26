@@ -18,6 +18,8 @@
 
 package com.movtery.layer_controller.layout
 
+import coil3.compose.AsyncImage
+
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -152,6 +154,16 @@ internal fun TextButton(
                     textUnderline = data.textUnderline
                 )
                 else -> error("Unknown widget type")
+            }
+            val iconPath = (data as? ObservableNormalData)?.iconPath
+            if (!iconPath.isNullOrBlank()) {
+                runCatching {
+                    coil3.compose.AsyncImage(
+                        model = java.io.File(iconPath),
+                        contentDescription = null,
+                        modifier = Modifier.matchParentSize(),
+                    )
+                }
             }
             RtLText(
                 text = buttonTextStyle.text.translate(locale),
