@@ -18,6 +18,7 @@
     <style name="Theme.VOID.Bootstrap" parent="Theme.VOID">
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowBackground">@drawable/void_splash</item>
     </style>
 
     <style name="Theme.VOID.Game" parent="Theme.VOID">

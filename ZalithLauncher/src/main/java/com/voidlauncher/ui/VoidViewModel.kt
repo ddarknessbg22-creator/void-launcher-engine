@@ -518,7 +518,7 @@ class VoidViewModel(
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(EngineRepository.VOID_ENGINE_URL))
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         runCatching { appContext.startActivity(intent) }
-            .onFailure { notify("Open ${EngineRepository.VOID_ENGINE_URL} to get Zalith Launcher") }
+            .onFailure { notify("Open ${EngineRepository.VOID_ENGINE_URL} to get VOID Engine") }
     }
 
     /**

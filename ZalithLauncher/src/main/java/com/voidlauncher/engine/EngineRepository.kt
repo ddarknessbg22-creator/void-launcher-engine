@@ -38,10 +38,10 @@ class EngineRepository(context: Context) {
         EngineDef("net.kdt.pojavlaunch.debug", "PojavLauncher (debug)", "Development build"),
         EngineDef("com.amethyst.launcher", "Amethyst", "PojavLauncher successor"),
         EngineDef("org.fcl.launcher", "Fold Craft Launcher", "Foldable / large-screen focused"),
-        EngineDef("com.zalith.launcher", "Zalith Launcher", "MobileGlues renderer / Sodium friendly"),
-        EngineDef("com.movtery.zalithlauncher", "Zalith Launcher", "MobileGlues renderer / Sodium friendly"),
-        EngineDef("com.movtery.zalithlauncher.v2", "Zalith Launcher", "MobileGlues renderer / Sodium friendly"),
-        EngineDef("com.movtery.zalithlauncher.v2.debug", "Zalith Launcher", "MobileGlues renderer / Sodium friendly"),
+        EngineDef("com.zalith.launcher", "VOID Engine", "MobileGlues renderer / Sodium friendly"),
+        EngineDef("com.movtery.zalithlauncher", "VOID Engine", "MobileGlues renderer / Sodium friendly"),
+        EngineDef("com.movtery.zalithlauncher.v2", "VOID Engine", "MobileGlues renderer / Sodium friendly"),
+        EngineDef("com.movtery.zalithlauncher.v2.debug", "VOID Engine", "MobileGlues renderer / Sodium friendly"),
         EngineDef("com.rxlauncher.app", "RXLauncher", "Mod-focused launcher"),
         EngineDef("com.mcinabox.launcher", "MCinaBox", "Boardwalk-based launcher"),
     )
@@ -80,6 +80,6 @@ class EngineRepository(context: Context) {
 
     companion object {
         const val ENGINE_SOURCE_URL = "https://github.com/PojavLauncherTeam/PojavLauncher/releases"
-        const val VOID_ENGINE_URL = "https://github.com/ZalithLauncher/ZalithLauncher2/releases"
+        const val VOID_ENGINE_URL = "https://github.com/ddarknessbg22-creator/void-launcher-engine/releases"
             }
 }

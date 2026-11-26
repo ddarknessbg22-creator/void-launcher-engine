@@ -338,18 +338,26 @@ private fun SystemSettings(state: UiState, vm: VoidViewModel, context: android.c
         VoidRow("Touch controls", "Open control manager", onClick = {
             val manager = com.movtery.zalithlauncher.game.control.ControlManager
             manager.checkDefaultAndRefresh(context)
-            val file = manager.selectedLayout.value?.file
-                ?: manager.dataList.value.firstOrNull()?.file
-            if (file != null) {
-                context.startActivity(android.content.Intent(
+            // Refresh is async. Open as soon as the first layout appears, with a short
+            // bounded wait, instead of telling the user to tap again.
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                var file = manager.selectedLayout.value?.file
+                    ?: manager.dataList.value.firstOrNull()?.file
+                repeat(20) {
+                    if (file == null) {
+                        kotlinx.coroutines.delay(100)
+                        file = manager.selectedLayout.value?.file
+                            ?: manager.dataList.value.firstOrNull()?.file
+                    }
+                }
+                if (file == null) vm.notify("Could not load control layouts")
+                else context.startActivity(android.content.Intent(
                     context,
                     com.voidlauncher.ui.activities.VoidControlEditorActivity::class.java,
                 ).putExtra(
                     com.voidlauncher.ui.activities.VoidControlEditorActivity.EXTRA_LAYOUT_PATH,
                     file.absolutePath,
                 ))
-            } else {
-                vm.notify("Control layout is still loading - try again")
             }
         })
         VoidDivider()
