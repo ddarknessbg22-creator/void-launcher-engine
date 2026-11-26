@@ -198,8 +198,6 @@ fun SettingsScreen(
     }
 }
 
-    }
-
 @Composable
 private fun AccountSettings(
     state: UiState,
