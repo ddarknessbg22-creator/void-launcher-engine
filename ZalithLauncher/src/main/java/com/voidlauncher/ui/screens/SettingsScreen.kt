@@ -253,11 +253,7 @@ private fun LauncherSettings(state: UiState, vm: VoidViewModel, context: android
             onChange = { value -> vm.updateAdvanced { it.copy(autoInstallGame = value) } },
         )
         VoidDivider()
-        VoidRow(
-            "JVM arguments",
-            if (state.settings.jvmArgs.isBlank()) "None" else state.settings.jvmArgs,
-            onClick = { jvmText = state.settings.jvmArgs; jvmDialog = true },
-        )
+        VoidRow("JVM arguments", if (state.settings.jvmArgs.isBlank()) "None" else state.settings.jvmArgs)
     }
 }
 
@@ -348,36 +344,7 @@ private fun SystemSettings(state: UiState, vm: VoidViewModel, context: android.c
         }
     }
 
-    Spacer(Modifier.height(18.dp))
-    VoidSectionTitle("About")
-    VoidPanel(Modifier.padding(bottom = 16.dp)) {
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            androidx.compose.foundation.Image(
-                painter = androidx.compose.ui.res.painterResource(com.movtery.zalithlauncher.R.drawable.elite_pfp),
-                contentDescription = "Elite",
-                modifier = Modifier
-                    .size(96.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .border(1.dp, VoidDesign.Line, androidx.compose.foundation.shape.CircleShape),
-            )
-        }
-        Spacer(Modifier.height(14.dp))
-        Text("MADE BY ELITE", style = VoidDesign.Headline)
-        Spacer(Modifier.height(4.dp))
-        Text("Design, engine integration and everything you see.", style = VoidDesign.Caption)
-        Spacer(Modifier.height(16.dp))
-        VoidDivider()
-        Spacer(Modifier.height(12.dp))
-        Text("VOID Launcher", style = VoidDesign.Title)
-        Spacer(Modifier.height(3.dp))
-        Text(
-            "A single Android app for real Minecraft: Java Edition. Kotlin, Jetpack Compose and a native engine.",
-            style = VoidDesign.Caption,
-        )
-        Spacer(Modifier.height(12.dp))
-        Text("Version 1.0.0 · GPL-3.0 engine", style = VoidDesign.Caption)
-    }
-
+}
 
 @Composable
 private fun AboutSettings(vm: VoidViewModel) {
