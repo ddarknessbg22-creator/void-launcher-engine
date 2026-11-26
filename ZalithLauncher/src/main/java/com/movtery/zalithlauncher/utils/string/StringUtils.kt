@@ -107,10 +107,11 @@ fun String.getLine(line: Int): String? {
 
 fun String.toSingleLine(replace: String = " "): String = this.replace("\n", replace)
 
-fun insertJSONValueList(args: Array<String>, keyValueMap: Map<String, String>) =
-    args.map {
-        keyValueMap.entries.fold(it) { acc, (k, v) ->
-            acc.replace("\${$k}", v)
+fun insertJSONValueList(args: Array<String>, keyValueMap: Map<String, String?>) =
+    args.map { argument ->
+        keyValueMap.entries.fold(argument) { acc, (k, v) ->
+            // Values can be null for optional fields on older versions (e.g. 1.12.2).
+            acc.replace("\${$k}", v ?: "")
         }
     }.toTypedArray()
 
