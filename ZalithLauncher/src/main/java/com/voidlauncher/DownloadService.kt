@@ -143,16 +143,20 @@ class DownloadService : Service() {
     }
 
     private suspend fun observe(flow: StateFlow<DownloadState>) {
+        var sawActive = false
         flow.collect { state ->
             when {
-                state.active -> update(
-                    state.stage.ifBlank { "Downloading" }, state.percent, state.bytesDone, state.bytesTotal,
-                )
-                state.success -> {
+                state.active -> {
+                    sawActive = true
+                    update(
+                        state.stage.ifBlank { "Downloading" }, state.percent, state.bytesDone, state.bytesTotal,
+                    )
+                }
+                sawActive && state.success -> {
                     update("Download complete", 1f, state.bytesDone, state.bytesTotal)
                     finish("Download complete")
                 }
-                state.error != null -> {
+                sawActive && state.error != null -> {
                     update("Download failed: ${state.error}", 0f, state.bytesDone, state.bytesTotal)
                     finish("Download failed: ${state.error}")
                 }
