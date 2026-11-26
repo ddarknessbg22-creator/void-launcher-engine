@@ -808,17 +808,6 @@ class VoidViewModel(
         }
     }
 
-    private fun resolveDisplayName(uri: Uri, fallback: String): String {
-        appContext.contentResolver.query(
-            uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null,
-        )?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                val index = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                if (index >= 0) cursor.getString(index)?.let { return it }
-            }
-        }
-        return fallback
-    }
 
 
     fun featureStatus(): List<GameFeature> = listOf(
