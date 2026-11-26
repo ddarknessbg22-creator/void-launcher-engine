@@ -51,14 +51,13 @@ abstract class FabricLikeVersions(
         tag: String,
         mcVersion: String
     ): List<FabricLikeLoader>? = withContext(Dispatchers.Default) {
-        mirrorUrl?.takeIf { isChinaMainland() }?.let {
-            runMirrorable(
-                listOf(
-                    fetchListFromMirrorSource(SourceType.OFFICIAL, force, tag, mcVersion, officialUrl),
-                    fetchListFromMirrorSource(SourceType.BMCLAPI, force, tag, mcVersion, it)
-                ).orderedByGameSourcePreference()
-            )
-        } ?: run {
+        // VOID: official JSON first, mirror only as fallback.
+        runMirrorable(
+            listOf(
+                fetchListFromMirrorSource(SourceType.OFFICIAL, force, tag, mcVersion, officialUrl),
+                mirrorUrl?.let { fetchListFromMirrorSource(SourceType.BMCLAPI, force, tag, mcVersion, it) }
+            ).filterNotNull().orderedByGameSourcePreference()
+        ) ?: run {
             //不支持镜像源，只使用官方源
             fetchListWithSource(force, tag, mcVersion, officialUrl)
         }

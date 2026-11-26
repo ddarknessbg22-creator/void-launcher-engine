@@ -50,13 +50,10 @@ object NeoForgeVersions {
             return@withContext it.outputVersionList(gameVersion)
         }
 
-        if (isChinaMainland()) {
-            runMirrorable(
-                listOf(fetchListWithOfficial(), fetchListWithBMCLAPI()).orderedByGameSourcePreference()
-            )
-        } else {
-            fetchOfficialVersions()
-        }?.also {
+        // VOID: try official first, then mirror.
+        runMirrorable(
+            listOf(fetchListWithOfficial(), fetchListWithBMCLAPI()).orderedByGameSourcePreference()
+        )?.also {
             cacheResult = it
         }?.outputVersionList(gameVersion)
     }
