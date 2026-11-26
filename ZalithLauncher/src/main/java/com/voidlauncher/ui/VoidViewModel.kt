@@ -66,6 +66,7 @@ data class UiState(
     val activeLoader: String = "Vanilla",
     val loaderBusy: Boolean = false,
     val loaderLoading: Boolean = false,
+    val loaderTasks: List<String> = emptyList(),
     val modQuery: String = "",
     val modResults: List<com.voidlauncher.engine.VoidModResult> = emptyList(),
     val modSearching: Boolean = false,
@@ -397,6 +398,14 @@ class VoidViewModel(
             }
             _ui.update { it.copy(loaderOptions = options, loaderLoading = false) }
             if (options.isEmpty()) notify("No $name build listed for $version")
+        }
+    }
+
+    init {
+        viewModelScope.launch {
+            com.voidlauncher.engine.VoidLoaderInstaller.loaderTasks.collect { tasks ->
+                _ui.update { it.copy(loaderTasks = tasks) }
+            }
         }
     }
 

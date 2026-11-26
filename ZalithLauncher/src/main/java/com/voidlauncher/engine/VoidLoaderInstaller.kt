@@ -55,6 +55,9 @@ object VoidLoaderInstaller {
      * Installs [loader] [loaderVersion] for [minecraftVersion] as a new version named
      * `<minecraftVersion>-<loader>` and returns that version name.
      */
+    private val _loaderTasks = kotlinx.coroutines.flow.MutableStateFlow<List<String>>(emptyList())
+    val loaderTasks: kotlinx.coroutines.flow.StateFlow<List<String>> get() = _loaderTasks
+
     suspend fun install(
         context: Context,
         scope: CoroutineScope,
@@ -88,10 +91,22 @@ object VoidLoaderInstaller {
             targetGameFolder = VoidPaths.root(context),
         )
 
+        _loaderTasks.value = emptyList()
         suspendCancellableCoroutine<Unit> { cont ->
             val done = AtomicBoolean(false)
+            val observer = scope.launch {
+                installer.tasksFlow.collect { tasks ->
+                    _loaderTasks.value = tasks.map { task ->
+                        val title = task.title.toAndroidString(context)
+                        val p = task.task.progress.value
+                        if (p >= 0f) "$title ${(p * 100).toInt()}%" else title
+                    }
+                }
+            }
+            cont.invokeOnCancellation { observer.cancel() }
             installer.installGame(
                 onInstalled = {
+                    observer.cancel()
                     if (done.compareAndSet(false, true) && cont.isActive) cont.resume(Unit)
                 },
                 onError = { th ->

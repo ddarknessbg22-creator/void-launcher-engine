@@ -390,10 +390,16 @@ private fun LoadersSection(state: UiState, vm: VoidViewModel) {
     Spacer(Modifier.height(8.dp))
     VoidSectionTitle("${state.activeLoader} builds")
     if (state.loaderBusy) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = VoidDesign.Ink)
-            Spacer(Modifier.size(10.dp))
-            Text("Installing loader", style = VoidDesign.Caption)
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = VoidDesign.Ink)
+                Spacer(Modifier.size(10.dp))
+                Text("Installing loader", style = VoidDesign.Caption)
+            }
+            state.loaderTasks.takeLast(5).forEach { task ->
+                Spacer(Modifier.height(4.dp))
+                Text(task, style = VoidDesign.Caption)
+            }
         }
         return
     }
