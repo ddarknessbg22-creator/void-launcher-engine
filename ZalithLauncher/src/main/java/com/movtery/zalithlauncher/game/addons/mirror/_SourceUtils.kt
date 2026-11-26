@@ -54,3 +54,13 @@ suspend fun <T> runMirrorable(
     if (failure != null) throw failure
     null
 }
+
+/**
+ * 把官方在前、镜像在后的规范源列表按“游戏内容下载源”设置重排；
+ * 自动档下大陆用户镜像优先，官方档仅保留官方源
+ */
+fun <T> List<MirrorSource<T>>.orderedByGameSourcePreference(): List<MirrorSource<T>> =
+    when (resolveMirrorPriority(LauncherSettings.gameDownloadSource.getValue(), mainland = true)) {
+        MirrorPriority.OFFICIAL -> filter { it.type == SourceType.OFFICIAL }
+        MirrorPriority.MIRROR_FIRST -> reversed()
+    }
