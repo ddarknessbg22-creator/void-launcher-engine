@@ -406,96 +406,67 @@ private fun ModBox(iconUrl: String?) {
 private fun LoadersSection(state: UiState, vm: VoidViewModel) {
     VoidSectionTitle("Mod loader")
     VoidPanel(Modifier.padding(bottom = 14.dp)) {
-        Text("Selected version", style = VoidDesign.Caption)
-        Spacer(Modifier.height(3.dp))
-        Text(state.selectedVersionId ?: "None", style = VoidDesign.Title)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "A loader is installed as its own version, so your vanilla install stays untouched.",
-            style = VoidDesign.Caption,
-        )
+        Text(state.selectedVersionId ?: "No version selected", style = VoidDesign.Title)
+        Spacer(Modifier.height(4.dp))
+        Text("Installs as a separate version. Your vanilla install stays untouched.", style = VoidDesign.Caption)
     }
 
-    val loaders = com.voidlauncher.engine.VoidLoaderInstaller.LOADERS
     Column {
-        loaders.chunked(3).forEach { row ->
-            Row(
-                Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+        com.voidlauncher.engine.VoidLoaderInstaller.LOADERS.chunked(3).forEach { row ->
+            Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { name ->
                     val selected = name == state.activeLoader
                     Box(
-                        Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(8.dp))
+                        Modifier.weight(1f).clip(RoundedCornerShape(8.dp))
                             .background(if (selected) VoidDesign.Ink else VoidDesign.Panel)
-                            .clickable { vm.setLoader(name) }
-                            .padding(vertical = 10.dp),
+                            .clickable { vm.setLoader(name) }.padding(vertical = 10.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            name,
-                            style = VoidDesign.Label.copy(color = if (selected) VoidDesign.Canvas else VoidDesign.Muted),
-                        )
+                        Text(name, style = VoidDesign.Label.copy(color = if (selected) VoidDesign.Canvas else VoidDesign.Muted))
                     }
                 }
             }
         }
     }
 
-    if (state.activeLoader == "Vanilla") {
-        Text("Vanilla is the default. Pick a loader to install one.", style = VoidDesign.Caption)
-        return
-    }
-
     Spacer(Modifier.height(8.dp))
-    VoidSectionTitle("${state.activeLoader} builds")
-    if (state.loaderBusy) {
-        Column {
+    when {
+        state.loaderBusy -> {
+            val current = state.loaderTasks.lastOrNull()
+            val percent = current?.substringAfterLast(' ')?.trimEnd('%')?.toIntOrNull()
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = VoidDesign.Ink)
                 Spacer(Modifier.size(10.dp))
-                Text("Installing loader", style = VoidDesign.Caption)
+                Text(current?.substringBeforeLast(' ') ?: "Installing ${state.activeLoader}", style = VoidDesign.Caption)
+                Spacer(Modifier.weight(1f))
+                if (percent != null) Text("$percent%", style = VoidDesign.Caption)
             }
-            state.loaderTasks.takeLast(5).forEach { task ->
-                Spacer(Modifier.height(4.dp))
-                Text(task, style = VoidDesign.Caption)
-            }
+            Spacer(Modifier.height(8.dp))
+            androidx.compose.material3.LinearProgressIndicator(
+                progress = { (percent ?: 0) / 100f },
+                modifier = Modifier.fillMaxWidth().height(3.dp),
+                color = VoidDesign.Ink, trackColor = VoidDesign.Line,
+            )
         }
-        return
-    }
-    if (state.loaderLoading) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        state.loaderLoading -> Row(verticalAlignment = Alignment.CenterVertically) {
             CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = VoidDesign.Ink)
             Spacer(Modifier.size(10.dp))
             Text("Fetching ${state.activeLoader} builds", style = VoidDesign.Caption)
         }
-        return
-    }
-    if (state.loaderOptions.isEmpty()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("No ${state.activeLoader} build listed for ${state.selectedVersionId ?: "this version"}.",
-                style = VoidDesign.Caption, modifier = Modifier.weight(1f))
-            Text("RETRY", style = VoidDesign.Label.copy(color = VoidDesign.Ink),
-                modifier = Modifier.clickable { vm.setLoader(state.activeLoader) })
+        state.loaderOptions.isEmpty() -> Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("No ${state.activeLoader} build for ${state.selectedVersionId ?: "this version"}.", style = VoidDesign.Caption, modifier = Modifier.weight(1f))
+            Text("RETRY", style = VoidDesign.Label.copy(color = VoidDesign.Ink), modifier = Modifier.clickable { vm.setLoader(state.activeLoader) })
         }
-        return
-    }
-    state.loaderOptions.take(12).forEach { option ->
-        VoidPanel(Modifier.padding(bottom = 8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(option.version, style = VoidDesign.Title)
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        if (option.recommended) "${option.loader} · recommended" else option.loader,
-                        style = VoidDesign.Caption,
-                    )
+        else -> state.loaderOptions.take(10).forEach { option ->
+            VoidPanel(Modifier.padding(bottom = 8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(option.version, style = VoidDesign.Title)
+                        Spacer(Modifier.height(2.dp))
+                        Text(if (option.recommended) "Recommended" else option.loader, style = VoidDesign.Caption)
+                    }
+                    VoidSecondaryButton("Install", { vm.installLoader(option.loader, option.version) })
                 }
-                VoidSecondaryButton("Install", {
-                    vm.installLoader(option.loader, option.version)
-                })
             }
         }
     }
