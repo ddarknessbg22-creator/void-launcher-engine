@@ -37,6 +37,7 @@ class DownloadService : Service() {
         private const val NOTIFICATION_ID = 41
         const val ACTION_VERSION = "void.action.install_version"
         const val ACTION_JAVA = "void.action.download_java"
+        const val ACTION_CANCEL = "void.action.cancel_download"
         const val EXTRA_ID = "void.extra.id"
         const val EXTRA_MAJOR = "void.extra.major"
         const val EXTRA_COMPONENT = "void.extra.component"
@@ -106,6 +107,13 @@ class DownloadService : Service() {
         }
 
         when (intent?.action) {
+            ACTION_CANCEL -> {
+                workJob?.cancel()
+                observerJob?.cancel()
+                runCatching { (application as VoidApplication).versions.cancelInstall() }
+                finish("Download cancelled")
+                return START_NOT_STICKY
+            }
             ACTION_VERSION -> {
                 val id = intent.getStringExtra(EXTRA_ID)
                 if (id.isNullOrBlank()) {
@@ -161,15 +169,23 @@ class DownloadService : Service() {
             this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val detail = if (total > 0) "${Net.formatBytes(done)} / ${Net.formatBytes(total)}" else ""
+        val cancel = PendingIntent.getService(
+            this, 1, Intent(this, DownloadService::class.java).setAction(ACTION_CANCEL),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val percent = (progress * 100).toInt().coerceIn(0, 100)
+        val detail = if (total > 0) {
+            "$percent%  ${Net.formatBytes(done)} / ${Net.formatBytes(total)}"
+        } else "$percent%"
         return NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_download)
-            .setContentTitle("VOID Launcher")
-            .setContentText(if (detail.isBlank()) text else "$text · $detail")
+            .setContentTitle("VOID · $text")
+            .setContentText(detail)
             .setContentIntent(open)
+            .addAction(android.R.drawable.ic_delete, "Cancel", cancel)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .setProgress(1000, (progress * 1000).toInt(), total <= 0)
+            .setProgress(100, percent, total <= 0)
             .build()
     }
 

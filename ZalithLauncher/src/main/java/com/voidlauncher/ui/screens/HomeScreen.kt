@@ -185,7 +185,7 @@ private fun PrimaryLaunch(busy: Boolean, installed: Boolean, state: UiState, vm:
     Spacer(Modifier.height(8.dp))
     Text(
         if (state.selectedVersionId == null) "Choose a version first"
-        else "${state.activeLoader} loader · ${state.mods.size} mods · ${state.settings.memoryMb} MB",
+        else "${state.activeLoader} loader · ${state.mods.size} mods ready",
         style = VoidDesign.Caption,
         modifier = Modifier.fillMaxWidth(),
     )
