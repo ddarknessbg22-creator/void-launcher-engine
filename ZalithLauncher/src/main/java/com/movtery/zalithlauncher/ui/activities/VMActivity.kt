@@ -702,19 +702,16 @@ class VMActivity : BaseAppCompatActivity(), SurfaceTextureListener {
 
     private fun onLauncherExit(exitCode: Int, isSignal: Boolean) {
         stopAllService()
-        if (exitCode != 0) {
-            val session = vmViewModel.currentLayout?.session
-                ?: error("LaunchSession not initialized")
-            showExitMessage(
-                this@VMActivity,
-                exitCode,
-                isSignal,
-                session.launcher.getLogFile().absolutePath
-            )
-        } else {
-            //重启启动器
-            ProcessPhoenix.triggerRebirth(this@VMActivity)
-        }
+        // VOID: always surface the exit through the VOID recovery screen, even for code 0,
+        // so the game never appears to silently vanish.
+        val session = vmViewModel.currentLayout?.session
+        val logPath = session?.launcher?.getLogFile()?.absolutePath
+        showExitMessage(
+            this@VMActivity,
+            if (exitCode == 0) 1 else exitCode,
+            isSignal,
+            logPath,
+        )
     }
 
     override fun getTaskDescriptionTitle(): String? {
