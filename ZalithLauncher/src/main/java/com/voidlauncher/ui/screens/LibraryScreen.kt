@@ -259,6 +259,13 @@ private fun ModsSection(state: UiState, vm: VoidViewModel) {
         VoidDivider(Modifier.padding(vertical = 10.dp))
         if (state.mods.isEmpty()) {
             Text("No mods installed", style = VoidDesign.Body)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                if (state.selectedVersionId?.contains("fabric", true) == true)
+                    "Fabric is installed. Add Fabric mods as .jar files."
+                else "Add mods as .jar files, or install a mod loader first.",
+                style = VoidDesign.Caption,
+            )
         } else {
             state.mods.forEach { mod ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
