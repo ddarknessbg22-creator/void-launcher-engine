@@ -132,6 +132,7 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(28.dp))
         }
+        }
     }
 
     accountEdit?.let { (id, draft) ->
