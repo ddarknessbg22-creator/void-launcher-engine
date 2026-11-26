@@ -18,6 +18,10 @@ object NetConfig {
     @Volatile var maxAttempts: Int = 3
     @Volatile var parallelDownloads: Int = 4
     @Volatile var verifyDownloads: Boolean = true
+    @Volatile var autoRetry: Boolean = true
+    @Volatile var onFailure: ((String) -> Unit)? = null
+
+    fun attempts(): Int = if (autoRetry) maxAttempts.coerceIn(1, 8) else 1
 }
 
 object Net {
@@ -28,7 +32,7 @@ object Net {
     /** Plain text/JSON fetch. Called from an IO dispatcher. */
     fun fetchText(url: String): String {
         var lastError: Exception? = null
-        repeat(NetConfig.maxAttempts.coerceIn(1, 6)) { attempt ->
+        repeat(NetConfig.attempts()) { attempt ->
             var connection: HttpURLConnection? = null
             try {
                 connection = open(url)
@@ -40,7 +44,7 @@ object Net {
                 throw e
             } catch (e: Exception) {
                 lastError = e
-                if (attempt < NetConfig.maxAttempts - 1) Thread.sleep(400L * (1 shl attempt))
+                if (attempt < NetConfig.attempts() - 1) Thread.sleep((1500L * (1 shl attempt)).coerceAtMost(20000L))
             } finally {
                 connection?.disconnect()
             }
@@ -71,7 +75,7 @@ object Net {
         if (partial.exists()) partial.delete()
 
         var lastError: Exception? = null
-        repeat(NetConfig.maxAttempts.coerceIn(1, 6)) { attempt ->
+        repeat(NetConfig.attempts()) { attempt ->
             var connection: HttpURLConnection? = null
             try {
                 if (isCancelled()) throw CancellationException()
@@ -123,12 +127,14 @@ object Net {
             } catch (e: Exception) {
                 lastError = e
                 partial.delete()
-                if (attempt < NetConfig.maxAttempts - 1) Thread.sleep(500L * (1 shl attempt))
+                if (attempt < NetConfig.attempts() - 1) Thread.sleep((1500L * (1 shl attempt)).coerceAtMost(20000L))
             } finally {
                 connection?.disconnect()
             }
         }
-        throw DownloadException("Download failed for ${destination.name}: ${lastError?.message ?: "unknown error"}")
+        val message = "Download failed for ${destination.name}: ${lastError?.message ?: "unknown error"}"
+        runCatching { NetConfig.onFailure?.invoke(message) }
+        throw DownloadException(message)
     }
 
     /** Form POST used by the Microsoft OAuth token endpoint. */

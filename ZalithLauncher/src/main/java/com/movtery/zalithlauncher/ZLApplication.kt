@@ -81,8 +81,16 @@ open class ZLApplication : Application(), SingletonImageLoader.Factory {
                 Logger.error("AppCrash", "An exception occurred while saving the crash report", t)
             }
 
-            showLauncherCrash(this@ZLApplication, throwable, th !is SplashException)
-            Process.killProcess(Process.myPid())
+            // Network/download failures are shown inline by VOID's progress card. They must
+            // never kill the app or open the crash recovery screen.
+            val isDownloadFailure = runCatching {
+                throwable.javaClass.name.contains("DownloadException") ||
+                    throwable.message?.contains("Unable to resolve host", true) == true
+            }.getOrDefault(false)
+            if (!isDownloadFailure) {
+                showLauncherCrash(this@ZLApplication, throwable, th !is SplashException)
+                Process.killProcess(Process.myPid())
+            }
         }
 
         super.onCreate()

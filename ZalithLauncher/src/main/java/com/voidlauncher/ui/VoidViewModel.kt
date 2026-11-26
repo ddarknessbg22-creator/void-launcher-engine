@@ -151,6 +151,7 @@ class VoidViewModel(
         viewModelScope.launch {
             settingsRepo.advanced.collect { a ->
                 _ui.update { it.copy(advanced = a) }
+                com.voidlauncher.util.NetConfig.autoRetry = a.autoRetry
                 com.voidlauncher.util.NetConfig.maxAttempts = if (a.autoRetry) 3 else 1
                 com.voidlauncher.util.NetConfig.parallelDownloads = a.downloadThreads
                 com.voidlauncher.util.NetConfig.verifyDownloads = a.verifyDownloads

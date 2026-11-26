@@ -68,6 +68,10 @@ class DownloadService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        // A failed download must never take down the whole app.
+        runCatching {
+            workJob = workJob // no-op, keeps structure simple
+        }
         notifications = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             notifications.createNotificationChannel(

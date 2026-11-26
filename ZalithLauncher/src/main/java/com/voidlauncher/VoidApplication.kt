@@ -23,6 +23,9 @@ class VoidApplication : com.movtery.zalithlauncher.ZLApplication() {
     override fun onCreate() {
         super.onCreate()
         TokenVault.init(this)
+        com.voidlauncher.util.NetConfig.onFailure = { message ->
+            com.voidlauncher.engine.VoidFailureNotifier.report(this, message)
+        }
         val root = VoidPaths.root(this)
         VoidPaths.versions(root)
         VoidPaths.libraries(root)
