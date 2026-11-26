@@ -157,13 +157,11 @@ internal fun TextButton(
             }
             val iconPath = (data as? ObservableNormalData)?.iconPath
             if (!iconPath.isNullOrBlank()) {
-                runCatching {
-                    coil3.compose.AsyncImage(
-                        model = java.io.File(iconPath),
-                        contentDescription = null,
-                        modifier = Modifier.matchParentSize(),
-                    )
-                }
+                coil3.compose.AsyncImage(
+                    model = java.io.File(iconPath),
+                    contentDescription = null,
+                    modifier = Modifier.matchParentSize(),
+                )
             }
             RtLText(
                 text = buttonTextStyle.text.translate(locale),
