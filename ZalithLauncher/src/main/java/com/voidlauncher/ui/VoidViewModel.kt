@@ -20,7 +20,6 @@ import com.voidlauncher.model.AdvancedSettings
 import com.voidlauncher.model.DownloadState
 import com.voidlauncher.model.EngineInfo
 import com.voidlauncher.model.InstalledVersion
-import com.voidlauncher.model.GameFeature
 import com.voidlauncher.model.JavaRuntime
 import com.voidlauncher.model.LaunchProfile
 import com.voidlauncher.model.LaunchSettings
@@ -809,18 +808,6 @@ class VoidViewModel(
     }
 
 
-
-    fun featureStatus(): List<GameFeature> = listOf(
-        GameFeature("Offline accounts", "Multiple local profiles, persistent, last-used selection", com.voidlauncher.model.FeatureStatus.VERIFIED),
-        GameFeature("Version browser", "Live Mojang manifest with search and filters", com.voidlauncher.model.FeatureStatus.VERIFIED),
-        GameFeature("Game installation", "Client, libraries and assets with SHA-1 verification", com.voidlauncher.model.FeatureStatus.BUILT_NOT_DEVICE_VERIFIED),
-        GameFeature("Java detection", "Reads release descriptors; multiple runtimes", com.voidlauncher.model.FeatureStatus.BUILT_NOT_DEVICE_VERIFIED),
-        GameFeature("Microsoft sign-in", "OAuth -> Xbox Live -> XSTS -> Minecraft entitlement", com.voidlauncher.model.FeatureStatus.BUILT_NOT_DEVICE_VERIFIED),
-        GameFeature("Mod management", "Jar detection, enable/disable, add/remove", com.voidlauncher.model.FeatureStatus.BUILT_NOT_DEVICE_VERIFIED),
-        GameFeature("Game engine handoff", "Starts an already-installed compatible launcher with a prepared session", com.voidlauncher.model.FeatureStatus.BLOCKED),
-        GameFeature("In-app Minecraft rendering", "Requires bundling a native JRE + LWJGL + GL translation stack", com.voidlauncher.model.FeatureStatus.BLOCKED),
-        GameFeature("In-app touch controls", "Requires the native engine's input layer", com.voidlauncher.model.FeatureStatus.BLOCKED),
-    )
 
     fun notify(message: String) {
         _ui.update { it.copy(snackbar = message) }
