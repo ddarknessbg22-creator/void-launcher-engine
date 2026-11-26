@@ -237,15 +237,21 @@ class VersionRepository(context: Context) {
                                 if (cancelled()) throw CancellationException()
                                 val prefix = obj.hash.take(2)
                                 val file = File(File(VoidPaths.objects(root), prefix), obj.hash)
-                                var previous = 0L
-                                Net.downloadToFile(
-                                    "https://resources.download.minecraft.net/$prefix/${obj.hash}",
-                                    file, obj.hash,
-                                    onProgress = { done, _ -> track(done - previous); previous = done },
-                                    isCancelled = cancelled,
-                                )
+                                // One bad/transient asset (e.g. DNS blip) must not abort the
+                                // whole install. Retry via NetConfig, then skip and report.
+                                val ok = runCatching {
+                                    var previous = 0L
+                                    Net.downloadToFile(
+                                        url = "https://resources.download.minecraft.net/$prefix/${obj.hash}",
+                                        destination = file,
+                                        expectedSha1 = obj.hash,
+                                        onProgress = { done, _ -> track(done - previous); previous = done },
+                                        isCancelled = cancelled,
+                                    )
+                                }.isSuccess
                                 filesDone.incrementAndGet()
                                 counter.incrementAndGet()
+                                if (!ok) publish("Skipped one asset (will retry on next launch)", obj.hash)
                             }
                         }
                     }.awaitAll()
