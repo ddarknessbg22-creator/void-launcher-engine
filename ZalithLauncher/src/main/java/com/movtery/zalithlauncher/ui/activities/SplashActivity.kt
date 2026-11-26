@@ -129,9 +129,6 @@ class SplashActivity : BaseAppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // VOID: headless bootstrap. Unpack bundled JRE/LWJGL/SDL components, then hand
-        // off to VOID's own Compose UI. No Zalith launcher screen is ever shown.
         initUnpackItems()
 
         lifecycleScope.launch(Dispatchers.Main) {
@@ -139,7 +136,28 @@ class SplashActivity : BaseAppCompatActivity() {
                 checkAllTask()
                 if (requiresAgreementConsent()) acceptCurrentAgreement()
             }
-            if (!areAllTasksFinished()) startAllTask() else checkTasksToMain()
+            if (areAllTasksFinished()) {
+                // Returning user: no screen at all, go straight to VOID.
+                checkTasksToMain()
+            } else {
+                // New device: show VOID's one-time setup with real component progress.
+                setContent {
+                    com.voidlauncher.ui.theme.VoidTheme {
+                        com.voidlauncher.ui.screens.VoidBootstrapScreen(
+                            items = unpackItems.toList(),
+                            states = unpackItems.associate { it.name to it.state.value },
+                            busy = unpackItems.any { it.state.value == InstallableItem.State.RUNNING },
+                            onInstall = { startAllTask() },
+                        )
+                    }
+                }
+                // Keep the observable state fresh while installing.
+                unpackItems.forEach { item ->
+                    launch(Dispatchers.Main) {
+                        item.state.collect { }
+                    }
+                }
+            }
         }
     }
 

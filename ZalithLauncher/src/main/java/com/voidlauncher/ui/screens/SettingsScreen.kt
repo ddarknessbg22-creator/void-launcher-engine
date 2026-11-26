@@ -340,7 +340,7 @@ private fun SystemSettings(state: UiState, vm: VoidViewModel, context: android.c
             manager.checkDefaultAndRefresh(context)
             // Refresh is async. Open as soon as the first layout appears, with a short
             // bounded wait, instead of telling the user to tap again.
-            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.SupervisorJob()).launch {
                 var file = manager.selectedLayout.value?.file
                     ?: manager.dataList.value.firstOrNull()?.file
                 repeat(20) {
