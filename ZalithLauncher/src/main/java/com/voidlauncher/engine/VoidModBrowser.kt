@@ -14,6 +14,7 @@ data class VoidModResult(
     val platform: String,
     val platformKind: Platform,
     val iconUrl: String? = null,
+    val installed: Boolean = false,
     val data: PlatformSearchData,
 )
 

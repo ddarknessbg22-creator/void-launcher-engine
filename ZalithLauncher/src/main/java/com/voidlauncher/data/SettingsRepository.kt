@@ -26,6 +26,9 @@ class SettingsRepository(context: Context) {
     private val _profiles = MutableStateFlow(loadProfiles())
     val profiles: StateFlow<ProfileStore> = _profiles.asStateFlow()
 
+    private val _installedMods = MutableStateFlow(loadInstalledMods())
+    val installedMods: StateFlow<Map<String, Map<String, List<String>>>> = _installedMods.asStateFlow()
+
     var selectedVersionId: String?
         get() = prefs.getString("selected_version", null)
         set(value) = prefs.edit().putString("selected_version", value).apply()
@@ -72,6 +75,48 @@ class SettingsRepository(context: Context) {
     fun updateAdvanced(transform: (AdvancedSettings) -> AdvancedSettings) {
         _advanced.value = transform(_advanced.value)
         prefs.edit().putString("advanced_settings", voidJson.encodeToString(_advanced.value)).apply()
+    }
+
+    fun markModInstalled(versionId: String, projectId: String, fileName: String) {
+        val current = _installedMods.value.toMutableMap()
+        val projects = current.getOrPut(versionId) { emptyMap() }.toMutableMap()
+        projects[projectId] = (projects[projectId]?.toMutableSet() ?: mutableSetOf()).apply { add(fileName) }.toList().sorted()
+        current[versionId] = projects
+        _installedMods.value = current
+        persistInstalledMods()
+    }
+
+    fun removeModInstalled(versionId: String, fileName: String) {
+        val current = _installedMods.value.toMutableMap()
+        val projects = current[versionId].orEmpty().toMutableMap()
+        var changed = false
+        projects.forEach { (project, files) ->
+            if (fileName in files) {
+                val remaining = files.filterNot { it == fileName }
+                if (remaining.isEmpty()) projects.remove(project) else projects[project] = remaining
+                changed = true
+            }
+        }
+        if (changed) {
+            if (projects.isEmpty()) current.remove(versionId) else current[versionId] = projects
+            _installedMods.value = current
+            persistInstalledMods()
+        }
+    }
+
+    fun installedProjectIds(versionId: String): Set<String> =
+        _installedMods.value[versionId].orEmpty().keys
+
+    fun installedFileNames(versionId: String): Set<String> =
+        _installedMods.value[versionId].orEmpty().values.flatten().toSet()
+
+    private fun loadInstalledMods(): Map<String, Map<String, List<String>>> = try {
+        val raw = prefs.getString("installed_mods", null)
+        if (raw.isNullOrBlank()) emptyMap() else voidJson.decodeFromString(raw)
+    } catch (_: Exception) { emptyMap() }
+
+    private fun persistInstalledMods() {
+        prefs.edit().putString("installed_mods", voidJson.encodeToString(_installedMods.value)).apply()
     }
 
     private fun loadProfiles(): ProfileStore = try {

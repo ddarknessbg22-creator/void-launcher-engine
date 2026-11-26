@@ -78,6 +78,8 @@ fun LibraryScreen(state: UiState, vm: VoidViewModel) {
         }
     }
 
+    ModVersionSheet(state, vm)
+
     confirm?.let { (kind, value) ->
         AlertDialog(
             onDismissRequest = { confirm = null },
@@ -265,6 +267,9 @@ private fun ModsSection(state: UiState, vm: VoidViewModel) {
                     VoidPill(if (mod.enabled) "On" else "Off", active = mod.enabled)
                     Spacer(Modifier.size(10.dp))
                     Text("TOGGLE", style = VoidDesign.Label, modifier = Modifier.clickable { vm.toggleMod(mod.fileName) })
+                    Spacer(Modifier.size(10.dp))
+                    Text("DEL", style = VoidDesign.Label.copy(color = VoidDesign.Danger),
+                        modifier = Modifier.clickable { vm.deleteMod(mod.fileName) })
                 }
                 VoidDivider(Modifier.padding(vertical = 8.dp))
             }
@@ -317,6 +322,54 @@ private fun ModsSection(state: UiState, vm: VoidViewModel) {
             Text("Press GO to search.", style = VoidDesign.Caption)
         }
     }
+}
+
+@Composable
+private fun ModVersionSheet(state: UiState, vm: VoidViewModel) {
+    val selected = state.modSelected ?: return
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = { vm.closeMod() },
+        containerColor = VoidDesign.Panel,
+        title = { Text(selected.name, style = VoidDesign.Title) },
+        text = {
+            Column(
+                Modifier.fillMaxWidth().heightIn(max = 460.dp).verticalScroll(rememberScrollState()),
+            ) {
+                if (state.modVersionLoading) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = VoidDesign.Ink)
+                        Spacer(Modifier.size(10.dp))
+                        Text("Finding compatible versions", style = VoidDesign.Caption)
+                    }
+                } else if (state.modVersions.isEmpty()) {
+                    Text("No versions for this Minecraft version.", style = VoidDesign.Caption)
+                } else {
+                    state.modVersions.forEach { option ->
+                        VoidPanel(Modifier.padding(bottom = 6.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(option.label, style = VoidDesign.Body)
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        option.gameVersions.take(4).joinToString(", "),
+                                        style = VoidDesign.Caption,
+                                    )
+                                }
+                                when {
+                                    option.installed -> VoidPill("Installed", active = true)
+                                    option.compatible -> VoidSecondaryButton("Download", {
+                                        vm.installModVersion(option)
+                                    })
+                                    else -> VoidPill("Other MC")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { vm.closeMod() }) { Text("Close", color = VoidDesign.Ink) } },
+    )
 }
 
 @Composable
