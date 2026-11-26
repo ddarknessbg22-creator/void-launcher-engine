@@ -88,6 +88,24 @@ fun EditTextStyle(
                     )
                 }
                 is ObservableNormalData -> {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val imagePicker = androidx.activity.compose.rememberLauncherForActivityResult(
+                        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+                    ) { uri ->
+                        if (uri == null) return@rememberLauncherForActivityResult
+                        runCatching {
+                            val dir = java.io.File(context.getExternalFilesDir(null), "VOID/control_icons").apply { mkdirs() }
+                            val target = java.io.File(dir, "icon-${System.currentTimeMillis()}.png")
+                            context.contentResolver.openInputStream(uri)?.use { input ->
+                                target.outputStream().use { output -> input.copyTo(output) }
+                            }
+                            data.iconPath = target.absolutePath
+                        }
+                    }
+                    InfoLayoutTextItem(
+                        title = if (data.iconPath.isNullOrBlank()) "Button image: none" else "Button image: set",
+                        onClick = { imagePicker.launch("image/*") },
+                    )
                     commonStyles(
                         onEditWidgetText = {
                             onEditWidgetText(data.text)
