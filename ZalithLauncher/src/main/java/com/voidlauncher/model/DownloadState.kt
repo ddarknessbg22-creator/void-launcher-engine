@@ -13,6 +13,7 @@ data class DownloadState(
     val percent: Float = 0f,
     val success: Boolean = false,
     val error: String? = null,
+    val skipped: Int = 0,
 ) {
     val isFailure: Boolean get() = !active && error != null
 }

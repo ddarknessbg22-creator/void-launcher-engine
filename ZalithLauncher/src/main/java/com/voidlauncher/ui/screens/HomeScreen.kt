@@ -122,7 +122,10 @@ fun HomeScreen(state: UiState, vm: VoidViewModel, onNavigate: (String) -> Unit) 
             Spacer(Modifier.height(22.dp))
             VoidSectionTitle("Progress")
             VoidPanel {
-                Text(active.stage.ifBlank { "Working" }, style = VoidDesign.Body)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(active.stage.ifBlank { "Working" }, style = VoidDesign.Body, modifier = Modifier.weight(1f))
+                    if (active.skipped > 0) Text("Skipped: ${active.skipped}", style = VoidDesign.Caption)
+                }
                 Spacer(Modifier.height(10.dp))
                 LinearProgressIndicator(
                     progress = { active.percent },

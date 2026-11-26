@@ -136,6 +136,7 @@ class VersionRepository(context: Context) {
             val current = this
             val bytesDone = AtomicLong(0L)
             val filesDone = AtomicInteger(0)
+            val skipped = AtomicInteger(0)
             var totalFiles = 0
             var totalBytes = 0L
             val cancelled = { !current.isActive }
@@ -153,8 +154,9 @@ class VersionRepository(context: Context) {
                     filesTotal = totalFiles,
                     bytesDone = done,
                     bytesTotal = totalBytes,
-                    // Never let the bar look frozen because the byte estimate was low.
-                    percent = maxOf(byBytes, byFiles * 0.98f).coerceIn(0f, 1f),
+                    skipped = skipped.get(),
+                    // Keep the bar moving even if the byte estimate is too large or a file is skipped.
+                    percent = maxOf(byBytes, byFiles).coerceIn(0f, 1f),
                 )
             }
 
@@ -251,7 +253,10 @@ class VersionRepository(context: Context) {
                                 }.isSuccess
                                 filesDone.incrementAndGet()
                                 counter.incrementAndGet()
-                                if (!ok) publish("Skipped one asset (will retry on next launch)", obj.hash)
+                                if (!ok) {
+                                    skipped.incrementAndGet()
+                                    publish("Downloading assets", obj.hash)
+                                }
                             }
                         }
                     }.awaitAll()
@@ -274,7 +279,7 @@ class VersionRepository(context: Context) {
                 persistInstalled(_installed.value.filterNot { it.id == id } + record)
                 heartbeat.cancel()
                 _download.value = DownloadState(
-                    active = false, versionId = id, stage = "Installed", filesDone = filesDone.get(),
+                    active = false, versionId = id, stage = "Installed", skipped = skipped.get(), filesDone = filesDone.get(),
                     filesTotal = totalFiles, bytesDone = bytesDone.get(), bytesTotal = totalBytes,
                     percent = 1f, success = true,
                 )
