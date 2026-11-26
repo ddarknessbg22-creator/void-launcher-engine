@@ -1,21 +1,3 @@
-/*
- * Zalith Launcher 2
- * Copyright (C) 2025-2026 MovTery <movtery228@qq.com> and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/gpl-3.0.txt>.
- */
-
 package com.movtery.zalithlauncher.game.addons.mirror
 
 import com.movtery.zalithlauncher.setting.LauncherSettings
@@ -72,13 +54,3 @@ suspend fun <T> runMirrorable(
     if (failure != null) throw failure
     null
 }
-
-/**
- * 把官方在前、镜像在后的规范源列表按“游戏内容下载源”设置重排；
- * 自动档下大陆用户镜像优先，官方档仅保留官方源
- */
-fun <T> List<MirrorSource<T>>.orderedByGameSourcePreference(): List<MirrorSource<T>> =
-    when (resolveMirrorPriority(LauncherSettings.gameDownloadSource.getValue(), mainland = true)) {
-        MirrorPriority.OFFICIAL -> filter { it.type == SourceType.OFFICIAL }
-        MirrorPriority.MIRROR_FIRST -> reversed()
-    }
