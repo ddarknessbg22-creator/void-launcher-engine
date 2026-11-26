@@ -432,18 +432,17 @@ private fun LoadersSection(state: UiState, vm: VoidViewModel) {
     Spacer(Modifier.height(8.dp))
     when {
         state.loaderBusy -> {
-            val current = state.loaderTasks.lastOrNull()
-            val percent = current?.substringAfterLast(' ')?.trimEnd('%')?.toIntOrNull()
+            val progress = state.loaderProgress
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = VoidDesign.Ink)
                 Spacer(Modifier.size(10.dp))
-                Text(current?.substringBeforeLast(' ') ?: "Installing ${state.activeLoader}", style = VoidDesign.Caption)
+                Text(progress.label.ifBlank { "Installing ${state.activeLoader}" }, style = VoidDesign.Caption)
                 Spacer(Modifier.weight(1f))
-                if (percent != null) Text("$percent%", style = VoidDesign.Caption)
+                Text("${(progress.fraction * 100).toInt()}%", style = VoidDesign.Caption)
             }
             Spacer(Modifier.height(8.dp))
             androidx.compose.material3.LinearProgressIndicator(
-                progress = { (percent ?: 0) / 100f },
+                progress = { progress.fraction },
                 modifier = Modifier.fillMaxWidth().height(3.dp),
                 color = VoidDesign.Ink, trackColor = VoidDesign.Line,
             )

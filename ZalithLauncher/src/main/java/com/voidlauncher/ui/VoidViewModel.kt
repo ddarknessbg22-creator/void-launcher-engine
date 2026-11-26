@@ -66,6 +66,8 @@ data class UiState(
     val loaderBusy: Boolean = false,
     val loaderLoading: Boolean = false,
     val loaderTasks: List<String> = emptyList(),
+    val loaderProgress: com.voidlauncher.engine.VoidLoaderInstaller.LoaderProgress =
+        com.voidlauncher.engine.VoidLoaderInstaller.LoaderProgress("", 0f),
     val modQuery: String = "",
     val modResults: List<com.voidlauncher.engine.VoidModResult> = emptyList(),
     val modSearching: Boolean = false,
@@ -415,6 +417,9 @@ class VoidViewModel(
         viewModelScope.launch {
             com.voidlauncher.engine.VoidLoaderInstaller.loaderTasks.collect { tasks ->
                 _ui.update { it.copy(loaderTasks = tasks) }
+            }
+            com.voidlauncher.engine.VoidLoaderInstaller.loaderProgress.collect { progress ->
+                _ui.update { it.copy(loaderProgress = progress) }
             }
         }
     }

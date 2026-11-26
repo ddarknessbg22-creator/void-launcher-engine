@@ -59,8 +59,13 @@ object VoidLoaderInstaller {
      * Installs [loader] [loaderVersion] for [minecraftVersion] as a new version named
      * `<minecraftVersion>-<loader>` and returns that version name.
      */
+    data class LoaderProgress(val label: String, val fraction: Float)
+
     private val _loaderTasks = kotlinx.coroutines.flow.MutableStateFlow<List<String>>(emptyList())
     val loaderTasks: kotlinx.coroutines.flow.StateFlow<List<String>> get() = _loaderTasks
+
+    private val _loaderProgress = kotlinx.coroutines.flow.MutableStateFlow(LoaderProgress("", 0f))
+    val loaderProgress: kotlinx.coroutines.flow.StateFlow<LoaderProgress> get() = _loaderProgress
 
     suspend fun install(
         context: Context,
@@ -96,14 +101,21 @@ object VoidLoaderInstaller {
         )
 
         _loaderTasks.value = emptyList()
+        _loaderProgress.value = LoaderProgress("Starting", 0f)
         suspendCancellableCoroutine<Unit> { cont ->
             val done = AtomicBoolean(false)
             val observer = scope.launch {
                 installer.tasksFlow.collect { tasks ->
-                    _loaderTasks.value = tasks.map { task ->
-                        val title = task.title.toAndroidString(context)
-                        val p = task.task.progress.value
-                        if (p >= 0f) "$title ${(p * 100).toInt()}%" else title
+                    _loaderTasks.value = tasks.map { it.title.toAndroidString(context) }
+                    val running = tasks.firstOrNull { it.task.stage.value.name == "RUNNING" }
+                        ?: tasks.lastOrNull()
+                    if (running != null) {
+                        val raw = running.task.progress.value
+                        val fraction = if (raw >= 0f) raw.coerceIn(0f, 1f) else 0f
+                        _loaderProgress.value = LoaderProgress(
+                            label = running.title.toAndroidString(context),
+                            fraction = fraction,
+                        )
                     }
                 }
             }
