@@ -706,6 +706,7 @@ class VMActivity : BaseAppCompatActivity(), SurfaceTextureListener {
         // so the game never appears to silently vanish.
         val session = vmViewModel.currentLayout?.session
         val logPath = session?.launcher?.getLogFile()?.absolutePath
+            ?: com.movtery.zalithlauncher.path.PathManager.FILE_CRASH_REPORT.absolutePath
         showExitMessage(
             this@VMActivity,
             if (exitCode == 0) 1 else exitCode,
