@@ -420,3 +420,4 @@ private fun AboutSettings(vm: VoidViewModel) {
         VoidDivider()
         VoidRow("Mod platforms", "CurseForge + Modrinth")
     }
+}
