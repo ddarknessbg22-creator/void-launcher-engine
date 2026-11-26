@@ -253,7 +253,11 @@ private fun LauncherSettings(state: UiState, vm: VoidViewModel, context: android
             onChange = { value -> vm.updateAdvanced { it.copy(autoInstallGame = value) } },
         )
         VoidDivider()
-        VoidRow("JVM arguments", if (state.settings.jvmArgs.isBlank()) "None" else state.settings.jvmArgs)
+        VoidRow(
+            "JVM arguments",
+            if (state.settings.jvmArgs.isBlank()) "None" else state.settings.jvmArgs,
+            onClick = { jvmText = state.settings.jvmArgs; jvmDialog = true },
+        )
     }
 }
 
@@ -374,17 +378,6 @@ private fun SystemSettings(state: UiState, vm: VoidViewModel, context: android.c
         Text("Version 1.0.0 · GPL-3.0 engine", style = VoidDesign.Caption)
     }
 
-    VoidSectionTitle("Credits")
-    VoidPanel(Modifier.padding(bottom = 8.dp)) {
-        VoidRow("Engine base", "Zalith Launcher 2 (GPL-3.0)")
-        VoidDivider()
-        VoidRow("Runtime", "Android OpenJDK builds")
-        VoidDivider()
-        VoidRow("Renderer", "MobileGlues / GL4ES / Zink")
-        VoidDivider()
-        VoidRow("Mod platforms", "CurseForge + Modrinth")
-    }
-}
 
 @Composable
 private fun AboutSettings(vm: VoidViewModel) {
@@ -427,4 +420,3 @@ private fun AboutSettings(vm: VoidViewModel) {
         VoidDivider()
         VoidRow("Mod platforms", "CurseForge + Modrinth")
     }
-}
