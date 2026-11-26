@@ -460,12 +460,18 @@ class VoidViewModel(
         }
         viewModelScope.launch {
             _ui.update { it.copy(modSearching = true) }
-            val results = com.voidlauncher.engine.VoidModBrowser.search(query, _ui.value.selectedVersionId)
-                .map { result ->
-                    val installed = result.id in settingsRepo.installedProjectIds(_ui.value.selectedVersionId.orEmpty())
-                    result.copy(installed = installed)
-                }
+            val outcome = runCatching {
+                com.voidlauncher.engine.VoidModBrowser.search(query, _ui.value.selectedVersionId)
+            }
+            val results = outcome.getOrDefault(emptyList()).map { result ->
+                val installed = result.id in settingsRepo.installedProjectIds(_ui.value.selectedVersionId.orEmpty())
+                result.copy(installed = installed)
+            }
             _ui.update { it.copy(modResults = results, modSearching = false) }
+            outcome.onFailure { notify(it.message ?: "Mod search failed") }
+            if (outcome.isSuccess && results.isEmpty()) {
+                notify("No results for \"$query\"")
+            }
         }
     }
 
@@ -486,7 +492,8 @@ class VoidViewModel(
                 com.voidlauncher.engine.VoidModInstaller.listVersions(
                     projectId = result.id,
                     platform = result.platformKind,
-                    minecraftVersion = _ui.value.selectedVersionId.orEmpty(),
+                    minecraftVersion = com.voidlauncher.engine.VoidModBrowser
+                        .baseMinecraftVersion(_ui.value.selectedVersionId).orEmpty(),
                     installedFiles = settingsRepo.installedFileNames(_ui.value.selectedVersionId.orEmpty()),
                 )
             }.onSuccess { versions ->
@@ -511,7 +518,8 @@ class VoidViewModel(
                     projectId = selected.id,
                     platform = selected.platformKind,
                     selectedVersionId = option.id,
-                    minecraftVersion = versionId,
+                    minecraftVersion = com.voidlauncher.engine.VoidModBrowser
+                        .baseMinecraftVersion(versionId).orEmpty(),
                     installedVersionId = versionId,
                 )
             }.onSuccess { (fileName, projectId) ->

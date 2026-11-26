@@ -20,7 +20,12 @@ data class VoidModResult(
 
 /** Real search against Modrinth and CurseForge using Zalith's proven API clients. */
 object VoidModBrowser {
-    suspend fun search(query: String, minecraftVersion: String?): List<VoidModResult> {
+    /** \"1.21.11-fabric\" -> \"1.21.11\"; mod APIs only understand base MC versions. */
+    fun baseMinecraftVersion(versionId: String?): String? =
+        versionId?.substringBefore('-')?.takeIf { it.isNotBlank() }
+
+    suspend fun search(query: String, versionId: String?): List<VoidModResult> {
+        val minecraftVersion = baseMinecraftVersion(versionId)
         val filter = PlatformSearchFilter(
             searchName = query,
             gameVersion = minecraftVersion.orEmpty(),
