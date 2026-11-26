@@ -1,7 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@android:color/black" />
-    <item>
-        <bitmap android:src="@drawable/void_splash_mark" android:gravity="center" />
+    <item android:gravity="center">
+        <shape android:shape="rectangle">
+            <size android:width="96dp" android:height="96dp" />
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+    <item android:gravity="center">
+        <vector xmlns:android="http://schemas.android.com/apk/res/android"
+            android:width="96dp" android:height="96dp" android:viewportWidth="108" android:viewportHeight="108">
+            <path android:fillColor="#FFFFFF" android:pathData="M34,26h12v56H34z" />
+            <path android:fillColor="#FFFFFF" android:pathData="M62,26h12v56H62z" />
+            <path android:fillColor="#FFFFFF" android:pathData="M24,42h10v16H24z" />
+            <path android:fillColor="#FFFFFF" android:pathData="M74,42h10v16H74z" />
+        </vector>
     </item>
 </layer-list>
