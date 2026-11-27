@@ -286,8 +286,8 @@ private fun NetworkSettings(state: UiState, vm: VoidViewModel) {
         )
         VoidDivider()
         VoidToggleRow(
-            label = "Verify files",
-            detail = "SHA-1 check every download",
+            label = "Verify downloads (SHA-1)",
+            detail = "Checks VOID's game/asset files against Mojang checksums. Off = faster, less safe.",
             checked = state.advanced.verifyDownloads,
             onChange = { value -> vm.updateAdvanced { it.copy(verifyDownloads = value) } },
         )

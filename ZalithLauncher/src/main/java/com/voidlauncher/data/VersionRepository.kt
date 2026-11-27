@@ -141,10 +141,18 @@ class VersionRepository(context: Context) {
             var totalBytes = 0L
             val cancelled = { !current.isActive }
 
+            // Live transfer rate + ETA, sampled once per second.
+            val speedBps = AtomicLong(0L)
+            var eta = -1L
+            var lastSampleBytes = 0L
+            var lastSampleAt = System.currentTimeMillis()
+
             fun publish(stage: String, file: String) {
                 val done = bytesDone.get()
                 val byBytes = if (totalBytes > 0) done.toFloat() / totalBytes else 0f
                 val byFiles = if (totalFiles > 0) filesDone.get().toFloat() / totalFiles else 0f
+                // Files are counted equally so the bar tracks real work, not just big jars.
+                val blended = (byFiles * 0.6f + byBytes * 0.4f).coerceIn(0f, 1f)
                 _download.value = DownloadState(
                     active = true,
                     versionId = id,
@@ -155,16 +163,31 @@ class VersionRepository(context: Context) {
                     bytesDone = done,
                     bytesTotal = totalBytes,
                     skipped = skipped.get(),
-                    // Keep the bar moving even if the byte estimate is too large or a file is skipped.
-                    percent = maxOf(byBytes, byFiles).coerceIn(0f, 1f),
+                    percent = blended,
+                    bytesPerSecond = speedBps.get(),
+                    etaSeconds = eta,
                 )
             }
 
             // Keeps the UI alive while a single large file is downloading.
             val heartbeat = launch(Dispatchers.IO) {
                 while (true) {
-                    kotlinx.coroutines.delay(1500)
-                    if (_download.value.active) publish(_download.value.stage, _download.value.currentFile)
+                    kotlinx.coroutines.delay(1000)
+                    if (!_download.value.active) continue
+                    val now = System.currentTimeMillis()
+                    val bytes = bytesDone.get()
+                    val elapsed = (now - lastSampleAt).coerceAtLeast(1L)
+                    val rate = ((bytes - lastSampleBytes) * 1000L / elapsed).coerceAtLeast(0L)
+                    speedBps.set(rate)
+                    lastSampleBytes = bytes
+                    lastSampleAt = now
+                    val remaining = (totalBytes - bytes).coerceAtLeast(0L)
+                    eta = when {
+                        rate <= 0L -> -1L
+                        totalBytes <= 0L -> -1L
+                        else -> remaining / rate
+                    }
+                    publish(_download.value.stage, _download.value.currentFile)
                 }
             }
 

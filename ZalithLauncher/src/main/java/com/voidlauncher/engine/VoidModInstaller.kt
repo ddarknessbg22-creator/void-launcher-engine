@@ -3,7 +3,11 @@ package com.voidlauncher.engine
 import android.content.Context
 import com.movtery.zalithlauncher.game.download.addon.downloadSingleForVersions
 import com.movtery.zalithlauncher.game.download.addon.platform.Platform
+import com.movtery.zalithlauncher.game.download.addon.platform.PlatformClasses
+import com.movtery.zalithlauncher.game.download.addon.platform.PlatformSearchFilter
+import com.movtery.zalithlauncher.game.download.addon.platform.curseforge.CurseForgeSearcher
 import com.movtery.zalithlauncher.game.download.addon.platform.getVersions
+import com.movtery.zalithlauncher.game.download.addon.platform.modrinth.ModrinthSearcher
 import com.movtery.zalithlauncher.game.version.installed.VersionFolders
 import com.movtery.zalithlauncher.game.version.installed.VersionsManager
 import com.movtery.zalithlauncher.viewmodel.ErrorViewModel
@@ -18,10 +22,9 @@ data class VoidModVersionOption(
     val installed: Boolean,
 )
 
-/** Downloads a mod's newest file that matches the selected Minecraft version. */
+/** Downloads mods from Modrinth and CurseForge into the selected version's mods folder. */
 object VoidModInstaller {
 
-    /** Stops a search result from being installed twice in a row. */
     private val inFlight = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
 
     suspend fun listVersions(
@@ -43,12 +46,14 @@ object VoidModInstaller {
                 compatible = minecraftVersion in games,
                 installed = candidate.platformFileName() in installedFiles,
             )
-        }.sortedWith(compareByDescending<VoidModVersionOption> { it.installed }
-            .thenByDescending { it.compatible }
-            .thenByDescending { it.gameVersions.firstOrNull().orEmpty() })
-            .take(80)
+        }.sortedWith(
+            compareByDescending<VoidModVersionOption> { it.installed }
+                .thenByDescending { it.compatible }
+                .thenByDescending { it.gameVersions.firstOrNull().orEmpty() },
+        ).take(80)
     }
 
+    /** Installs one specific file. Returns the copied file name and its project id. */
     suspend fun downloadExact(
         context: Context,
         projectId: String,
@@ -82,5 +87,48 @@ object VoidModInstaller {
         } finally {
             inFlight.remove(key)
         }
+    }
+
+    /** Searches both platforms. Errors are surfaced rather than silently swallowed. */
+    suspend fun search(query: String, minecraftVersion: String?): List<VoidModResult> {
+        val filter = PlatformSearchFilter(
+            searchName = query,
+            gameVersion = minecraftVersion.orEmpty(),
+        )
+        val results = mutableListOf<VoidModResult>()
+        var lastError: Exception? = null
+
+        runCatching {
+            ModrinthSearcher().searchAddons(query, filter, PlatformClasses.MOD)
+                .getAddonPage(PlatformClasses.MOD).data.forEach { (data, info) ->
+                    results += VoidModResult(
+                        id = data.platformId(),
+                        name = info?.displayName()?.ifBlank { null } ?: "Modrinth mod",
+                        summary = "",
+                        platform = Platform.MODRINTH.displayName,
+                        platformKind = Platform.MODRINTH,
+                        iconUrl = data.platformIconUrl(),
+                        data = data,
+                    )
+                }
+        }.onFailure { lastError = it as? Exception }
+
+        runCatching {
+            CurseForgeSearcher().searchAddons(query, filter, PlatformClasses.MOD)
+                .getAddonPage(PlatformClasses.MOD).data.forEach { (data, info) ->
+                    results += VoidModResult(
+                        id = data.platformId(),
+                        name = info?.displayName()?.ifBlank { null } ?: "CurseForge mod",
+                        summary = "",
+                        platform = Platform.CURSEFORGE.displayName,
+                        platformKind = Platform.CURSEFORGE,
+                        iconUrl = data.platformIconUrl(),
+                        data = data,
+                    )
+                }
+        }.onFailure { lastError = it as? Exception }
+
+        if (results.isEmpty() && lastError != null) throw lastError!!
+        return results.distinctBy { it.platform to it.id }
     }
 }

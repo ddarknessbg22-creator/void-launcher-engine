@@ -250,7 +250,14 @@ private fun ModsSection(state: UiState, vm: VoidViewModel) {
     }
 
     VoidSectionTitle("Installed mods", trailing = {
-        Text("ADD JAR", style = VoidDesign.Label.copy(color = VoidDesign.Ink), modifier = Modifier.clickable { picker.launch("*/*") })
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("↻", style = VoidDesign.Label.copy(color = VoidDesign.Ink),
+                modifier = Modifier
+                    .clickable { vm.loadMods(state.selectedVersionId.orEmpty()) }
+                    .padding(horizontal = 8.dp, vertical = 4.dp))
+            Text("ADD JAR", style = VoidDesign.Label.copy(color = VoidDesign.Ink),
+                modifier = Modifier.clickable { picker.launch("*/*") })
+        }
     })
     VoidPanel(Modifier.padding(bottom = 16.dp)) {
         Text(state.selectedVersionId ?: "No version selected", style = VoidDesign.Caption)
@@ -406,7 +413,7 @@ private fun ModBox(iconUrl: String?) {
 private fun LoadersSection(state: UiState, vm: VoidViewModel) {
     VoidSectionTitle("Mod loader")
     VoidPanel(Modifier.padding(bottom = 14.dp)) {
-        Text(state.selectedVersionId ?: "No version selected", style = VoidDesign.Title)
+        Text(state.loaderBaseVersion ?: state.selectedVersionId ?: "No version selected", style = VoidDesign.Title)
         Spacer(Modifier.height(4.dp))
         Text("Installs as a separate version. Your vanilla install stays untouched.", style = VoidDesign.Caption)
     }

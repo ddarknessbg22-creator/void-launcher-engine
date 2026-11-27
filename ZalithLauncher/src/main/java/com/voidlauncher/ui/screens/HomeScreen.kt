@@ -134,10 +134,19 @@ fun HomeScreen(state: UiState, vm: VoidViewModel, onNavigate: (String) -> Unit) 
                     trackColor = VoidDesign.PanelRaised,
                 )
                 Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "${(active.percent * 100).toInt()}% - ${Net.formatBytes(active.bytesDone)} / ${Net.formatBytes(active.bytesTotal)}",
-                    style = VoidDesign.Caption,
+                    style = VoidDesign.Caption, modifier = Modifier.weight(1f),
                 )
+                if (active.speedText.isNotBlank()) {
+                    Text(active.speedText, style = VoidDesign.Caption)
+                    Spacer(Modifier.size(8.dp))
+                }
+                if (active.etaText.isNotBlank()) {
+                    Text(active.etaText, style = VoidDesign.Caption)
+                }
+                }
                 if (active.filesTotal > 0) {
                     Text("${active.filesDone} / ${active.filesTotal} files", style = VoidDesign.Caption)
                 }

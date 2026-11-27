@@ -124,6 +124,7 @@ class DownloadService : Service() {
                 val repo = (application as VoidApplication).versions
                 workJob = scope.launch { repo.install(id).join() }
                 observerJob = scope.launch { observe(repo.download) }
+                return START_REDELIVER_INTENT
             }
             ACTION_JAVA -> {
                 val major = intent.getIntExtra(EXTRA_MAJOR, 17)
