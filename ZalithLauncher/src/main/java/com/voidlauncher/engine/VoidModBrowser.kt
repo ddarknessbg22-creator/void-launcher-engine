@@ -8,17 +8,6 @@ import com.movtery.zalithlauncher.game.download.addon.platform.curseforge.CurseF
 import com.movtery.zalithlauncher.game.download.addon.platform.curseforge.MCIM_CURSEFORGE_API
 import com.movtery.zalithlauncher.game.download.addon.platform.modrinth.ModrinthSearcher
 
-data class VoidModResult(
-    val id: String,
-    val name: String,
-    val summary: String,
-    val platform: String,
-    val platformKind: Platform,
-    val iconUrl: String? = null,
-    val installed: Boolean = false,
-    val data: PlatformSearchData,
-)
-
 /** Real search against Modrinth and CurseForge using Zalith's proven API clients. */
 object VoidModBrowser {
     /** \"1.21.11-fabric\" -> \"1.21.11\"; mod APIs only understand base MC versions. */

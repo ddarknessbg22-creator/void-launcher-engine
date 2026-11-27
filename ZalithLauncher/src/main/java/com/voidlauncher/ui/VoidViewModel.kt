@@ -74,6 +74,10 @@ data class UiState(
     val modSearching: Boolean = false,
     val modVersions: List<com.voidlauncher.engine.VoidModVersionOption> = emptyList(),
     val modVersionLoading: Boolean = false,
+    val modDownloadActive: Boolean = false,
+    val modDownloadProgress: Float = 0f,
+    val modDownloadBytes: Long = 0L,
+    val modDownloadTotal: Long = 0L,
     val modSelected: com.voidlauncher.engine.VoidModResult? = null,
     val installedModFiles: Set<String> = emptySet(),
 ) {
@@ -530,8 +534,16 @@ class VoidViewModel(
     fun installModVersion(option: com.voidlauncher.engine.VoidModVersionOption) {
         val selected = _ui.value.modSelected ?: return
         val versionId = _ui.value.selectedVersionId ?: return
-        if (_ui.value.modVersionLoading) return
-        _ui.update { it.copy(modVersionLoading = true) }
+        if (_ui.value.modVersionLoading || _ui.value.modDownloadActive) return
+        _ui.update {
+            it.copy(
+                modVersionLoading = true,
+                modDownloadActive = true,
+                modDownloadProgress = 0f,
+                modDownloadBytes = 0L,
+                modDownloadTotal = 0L,
+            )
+        }
         viewModelScope.launch {
             runCatching {
                 com.voidlauncher.engine.VoidModInstaller.downloadExact(
@@ -542,6 +554,15 @@ class VoidViewModel(
                     minecraftVersion = com.voidlauncher.engine.VoidModBrowser
                         .baseMinecraftVersion(versionId).orEmpty(),
                     installedVersionId = versionId,
+                    onProgress = { done, total ->
+                        _ui.update { state ->
+                            state.copy(
+                                modDownloadBytes = done,
+                                modDownloadTotal = total,
+                                modDownloadProgress = if (total > 0) done.toFloat() / total else 0f,
+                            )
+                        }
+                    },
                 )
             }.onSuccess { (fileName, projectId) ->
                 settingsRepo.markModInstalled(versionId, projectId, fileName)
@@ -561,7 +582,13 @@ class VoidViewModel(
             }.onFailure { th ->
                 notify(th.message ?: "Mod download failed")
             }
-            _ui.update { it.copy(modVersionLoading = false) }
+            _ui.update {
+                it.copy(
+                    modVersionLoading = false,
+                    modDownloadActive = false,
+                    modDownloadProgress = 0f,
+                )
+            }
         }
     }
 

@@ -1,17 +1,18 @@
 package com.voidlauncher.engine
 
 import android.content.Context
-import com.movtery.zalithlauncher.game.download.addon.downloadSingleForVersions
 import com.movtery.zalithlauncher.game.download.addon.platform.Platform
 import com.movtery.zalithlauncher.game.download.addon.platform.PlatformClasses
+import com.movtery.zalithlauncher.game.download.addon.platform.PlatformSearchData
 import com.movtery.zalithlauncher.game.download.addon.platform.PlatformSearchFilter
 import com.movtery.zalithlauncher.game.download.addon.platform.curseforge.CurseForgeSearcher
 import com.movtery.zalithlauncher.game.download.addon.platform.getVersions
 import com.movtery.zalithlauncher.game.download.addon.platform.modrinth.ModrinthSearcher
 import com.movtery.zalithlauncher.game.version.installed.VersionFolders
 import com.movtery.zalithlauncher.game.version.installed.VersionsManager
-import com.movtery.zalithlauncher.viewmodel.ErrorViewModel
+import com.voidlauncher.util.Net
 import com.voidlauncher.util.VoidPaths
+import java.io.File
 
 data class VoidModVersionOption(
     val id: String,
@@ -23,11 +24,53 @@ data class VoidModVersionOption(
     val recommended: Boolean = false,
 )
 
-/** Downloads mods from Modrinth and CurseForge into the selected version's mods folder. */
+data class VoidModResult(
+    val id: String,
+    val name: String,
+    val summary: String,
+    val platform: String,
+    val platformKind: Platform,
+    val iconUrl: String? = null,
+    val installed: Boolean = false,
+    val data: PlatformSearchData,
+)
+
+/** Downloads real mod files into the selected version's mods folder, with live progress. */
 object VoidModInstaller {
 
-    private val inFlight = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+    /** Searches Modrinth and CurseForge. */
+    suspend fun search(query: String, minecraftVersion: String?): List<VoidModResult> {
+        val filter = PlatformSearchFilter(searchName = query, gameVersion = minecraftVersion.orEmpty())
+        val results = mutableListOf<VoidModResult>()
 
+        runCatching {
+            ModrinthSearcher().searchAddons(query, filter, PlatformClasses.MOD)
+                .getAddonPage(PlatformClasses.MOD).data.forEach { (data, info) ->
+                    results += VoidModResult(
+                        id = data.platformId(),
+                        name = info?.displayName()?.ifBlank { null } ?: "Modrinth mod",
+                        summary = "", platform = Platform.MODRINTH.displayName,
+                        platformKind = Platform.MODRINTH, iconUrl = data.platformIconUrl(), data = data,
+                    )
+                }
+        }
+
+        runCatching {
+            CurseForgeSearcher().searchAddons(query, filter, PlatformClasses.MOD)
+                .getAddonPage(PlatformClasses.MOD).data.forEach { (data, info) ->
+                    results += VoidModResult(
+                        id = data.platformId(),
+                        name = info?.displayName()?.ifBlank { null } ?: "CurseForge mod",
+                        summary = "", platform = Platform.CURSEFORGE.displayName,
+                        platformKind = Platform.CURSEFORGE, iconUrl = data.platformIconUrl(), data = data,
+                    )
+                }
+        }
+
+        return results.distinctBy { it.platform to it.id }
+    }
+
+    /** Lists versions of a mod, newest compatible first. */
     suspend fun listVersions(
         projectId: String,
         platform: Platform,
@@ -54,7 +97,10 @@ object VoidModInstaller {
         ).take(80)
     }
 
-    /** Installs one specific file. Returns the copied file name and its project id. */
+    /**
+     * Downloads one mod version with real byte progress and copies it into the
+     * version's mods folder. Returns fileName to projectId.
+     */
     suspend fun downloadExact(
         context: Context,
         projectId: String,
@@ -62,74 +108,33 @@ object VoidModInstaller {
         selectedVersionId: String,
         minecraftVersion: String,
         installedVersionId: String,
+        onProgress: (bytesDone: Long, bytesTotal: Long) -> Unit = { _, _ -> },
     ): Pair<String, String> {
-        val key = "$platform:$projectId:$selectedVersionId"
-        check(inFlight.putIfAbsent(key, true) == null) { "This mod is already downloading" }
+        val match = getVersions(projectId, platform).firstOrNull { candidate ->
+            candidate.platformId() == selectedVersionId &&
+                runCatching { candidate.initFileStrict(projectId) }.getOrDefault(false)
+        } ?: throw IllegalStateException("That mod file is no longer available")
 
-        return try {
-            val match = getVersions(projectId, platform).firstOrNull { candidate ->
-                candidate.platformId() == selectedVersionId &&
-                    runCatching { candidate.initFileStrict(projectId) }.getOrDefault(false)
-            } ?: throw IllegalStateException("That mod file is no longer available")
+        val gameHome = VoidPaths.root(context).absolutePath
+        val version = VersionsManager.loadVersion(gameHome, installedVersionId)
+            ?: throw IllegalStateException("$installedVersionId is not installed")
 
-            val gameHome = VoidPaths.root(context).absolutePath
-            val version = VersionsManager.loadVersion(gameHome, installedVersionId)
-                ?: throw IllegalStateException("$installedVersionId is not installed")
+        val fileName = match.platformFileName()
+        val cache = File(context.cacheDir, "void-addons/${match.platformSha1() ?: selectedVersionId}")
+        cache.parentFile?.mkdirs()
 
-            downloadSingleForVersions(
-                version = match,
-                versions = listOf(version),
-                folder = VersionFolders.MOD.folderName,
-                submitError = { message: ErrorViewModel.ThrowableMessage ->
-                    throw IllegalStateException(message.message.toString())
-                },
-            )
-            match.platformFileName() to projectId
-        } finally {
-            inFlight.remove(key)
-        }
-    }
-
-    /** Searches both platforms. Errors are surfaced rather than silently swallowed. */
-    suspend fun search(query: String, minecraftVersion: String?): List<VoidModResult> {
-        val filter = PlatformSearchFilter(
-            searchName = query,
-            gameVersion = minecraftVersion.orEmpty(),
+        // Real streaming download, verified and cancellable, with byte-level progress.
+        Net.downloadToFile(
+            url = match.platformDownloadUrl(),
+            destination = cache,
+            expectedSha1 = match.platformSha1(),
+            onProgress = onProgress,
         )
-        val results = mutableListOf<VoidModResult>()
-        var lastError: Exception? = null
 
-        runCatching {
-            ModrinthSearcher().searchAddons(query, filter, PlatformClasses.MOD)
-                .getAddonPage(PlatformClasses.MOD).data.forEach { (data, info) ->
-                    results += VoidModResult(
-                        id = data.platformId(),
-                        name = info?.displayName()?.ifBlank { null } ?: "Modrinth mod",
-                        summary = "",
-                        platform = Platform.MODRINTH.displayName,
-                        platformKind = Platform.MODRINTH,
-                        iconUrl = data.platformIconUrl(),
-                        data = data,
-                    )
-                }
-        }.onFailure { lastError = it as? Exception }
-
-        runCatching {
-            CurseForgeSearcher().searchAddons(query, filter, PlatformClasses.MOD)
-                .getAddonPage(PlatformClasses.MOD).data.forEach { (data, info) ->
-                    results += VoidModResult(
-                        id = data.platformId(),
-                        name = info?.displayName()?.ifBlank { null } ?: "CurseForge mod",
-                        summary = "",
-                        platform = Platform.CURSEFORGE.displayName,
-                        platformKind = Platform.CURSEFORGE,
-                        iconUrl = data.platformIconUrl(),
-                        data = data,
-                    )
-                }
-        }.onFailure { lastError = it as? Exception }
-
-        if (results.isEmpty() && lastError != null) throw lastError!!
-        return results.distinctBy { it.platform to it.id }
+        val modsDir = File(version.getGameDir(), VersionFolders.MOD.folderName)
+        modsDir.mkdirs()
+        val target = File(modsDir, fileName)
+        cache.copyTo(target, overwrite = true)
+        return fileName to projectId
     }
 }

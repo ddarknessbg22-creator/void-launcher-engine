@@ -352,6 +352,19 @@ private fun ModVersionSheet(state: UiState, vm: VoidViewModel) {
             Column(
                 Modifier.fillMaxWidth().heightIn(max = 460.dp).verticalScroll(rememberScrollState()),
             ) {
+                if (state.modDownloadActive) {
+                    Text(
+                        "Downloading ${Net.formatBytes(state.modDownloadBytes)} / ${Net.formatBytes(state.modDownloadTotal)}",
+                        style = VoidDesign.Caption,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    androidx.compose.material3.LinearProgressIndicator(
+                        progress = { state.modDownloadProgress },
+                        modifier = Modifier.fillMaxWidth().height(4.dp),
+                        color = VoidDesign.Ink, trackColor = VoidDesign.Line,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
                 if (state.modVersionLoading) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = VoidDesign.Ink)
@@ -381,9 +394,10 @@ private fun ModVersionSheet(state: UiState, vm: VoidViewModel) {
                                 }
                                 when {
                                     option.installed -> VoidPill("Installed", active = true)
-                                    option.compatible -> VoidSecondaryButton("Download", {
-                                        vm.installModVersion(option)
-                                    })
+                                    option.compatible -> VoidSecondaryButton(
+                                        "Download", { vm.installModVersion(option) },
+                                        enabled = !state.modDownloadActive,
+                                    )
                                     else -> VoidPill("Other MC")
                                 }
                             }

@@ -135,18 +135,11 @@ class ErrorActivity : BaseAppCompatActivity() {
                     message = errorMessage.message + "\n" + errorMessage.messageBody,
                     logPath = logFile.absolutePath,
                     onSaveLog = {
-                        val saved = com.voidlauncher.ui.screens.VoidCrashLogs.save(
+                        com.voidlauncher.ui.screens.VoidCrashLogs.save(
                             this@ErrorActivity,
                             logFile.absolutePath,
                             errorMessage.message,
                         )
-                        if (saved == null) {
-                            com.voidlauncher.ui.screens.VoidCrashLogs.save(
-                                this@ErrorActivity,
-                                null,
-                                "No log file was available for this crash.",
-                            )
-                        }
                     },
                     onRestart = {
                         runCatching {
