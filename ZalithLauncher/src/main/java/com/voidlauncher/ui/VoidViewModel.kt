@@ -499,7 +499,11 @@ class VoidViewModel(
                     minecraftVersion = com.voidlauncher.engine.VoidModBrowser
                         .baseMinecraftVersion(_ui.value.selectedVersionId).orEmpty(),
                     installedFiles = settingsRepo.installedFileNames(_ui.value.selectedVersionId.orEmpty()),
-                )
+                ).mapIndexed { index, option ->
+                    // The first result is already sorted by installed > compatible > version,
+                    // so mark it as the recommended download.
+                    option.copy(recommended = index == 0 && option.compatible && !option.installed)
+                }
             }.onSuccess { versions ->
                 _ui.update { it.copy(modVersions = versions, modVersionLoading = false) }
                 if (versions.isEmpty()) notify("No files found for this Minecraft version")

@@ -5,6 +5,7 @@ import com.movtery.zalithlauncher.game.download.addon.platform.PlatformClasses
 import com.movtery.zalithlauncher.game.download.addon.platform.PlatformSearchData
 import com.movtery.zalithlauncher.game.download.addon.platform.PlatformSearchFilter
 import com.movtery.zalithlauncher.game.download.addon.platform.curseforge.CurseForgeSearcher
+import com.movtery.zalithlauncher.game.download.addon.platform.curseforge.MCIM_CURSEFORGE_API
 import com.movtery.zalithlauncher.game.download.addon.platform.modrinth.ModrinthSearcher
 
 data class VoidModResult(
@@ -47,19 +48,29 @@ object VoidModBrowser {
                 }
         }
 
-        runCatching {
-            CurseForgeSearcher().searchAddons(query, filter, PlatformClasses.MOD)
-                .getAddonPage(PlatformClasses.MOD).data.forEach { (data, info) ->
-                    results += VoidModResult(
-                        id = data.platformId(),
-                        name = info?.displayName()?.ifBlank { null } ?: "CurseForge mod",
-                        summary = "",
-                        platform = Platform.CURSEFORGE.displayName,
-                        platformKind = Platform.CURSEFORGE,
-                        iconUrl = data.platformIconUrl(),
-                        data = data,
-                    )
-                }
+        // The official CurseForge API needs an API key we cannot ship. Try official first,
+        // then the keyless MCIM mirror so CurseForge mods actually appear.
+        var cfError: Exception? = null
+        for (searcher in listOf(
+            CurseForgeSearcher(),
+            CurseForgeSearcher(api = MCIM_CURSEFORGE_API, source = "CurseForge mirror"),
+        )) {
+            runCatching {
+                searcher.searchAddons(query, filter, PlatformClasses.MOD)
+                    .getAddonPage(PlatformClasses.MOD).data.forEach { (data, info) ->
+                        results += VoidModResult(
+                            id = data.platformId(),
+                            name = info?.displayName()?.ifBlank { null } ?: "CurseForge mod",
+                            summary = "",
+                            platform = Platform.CURSEFORGE.displayName,
+                            platformKind = Platform.CURSEFORGE,
+                            iconUrl = data.platformIconUrl(),
+                            data = data,
+                        )
+                    }
+                return@runCatching
+            }.onFailure { cfError = it as? Exception }
+            if (results.any { it.platform == Platform.CURSEFORGE.displayName }) break
         }
 
         return results.distinctBy { it.platform to it.id }

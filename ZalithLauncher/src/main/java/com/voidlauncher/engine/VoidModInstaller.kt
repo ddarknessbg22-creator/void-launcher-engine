@@ -20,6 +20,7 @@ data class VoidModVersionOption(
     val gameVersions: List<String>,
     val compatible: Boolean,
     val installed: Boolean,
+    val recommended: Boolean = false,
 )
 
 /** Downloads mods from Modrinth and CurseForge into the selected version's mods folder. */

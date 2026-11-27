@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -364,10 +365,17 @@ private fun ModVersionSheet(state: UiState, vm: VoidViewModel) {
                         VoidPanel(Modifier.padding(bottom = 6.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text(option.label, style = VoidDesign.Body)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(option.label, style = VoidDesign.Body)
+                                        if (option.recommended) {
+                                            Spacer(Modifier.size(6.dp))
+                                            Text("★", color = Color(0xFF7CFF6B), style = VoidDesign.Body)
+                                        }
+                                    }
                                     Spacer(Modifier.height(2.dp))
                                     Text(
-                                        option.gameVersions.take(4).joinToString(", "),
+                                        if (option.recommended) "Best match for ${state.selectedVersionId ?: "this version"}"
+                                        else option.gameVersions.take(4).joinToString(", "),
                                         style = VoidDesign.Caption,
                                     )
                                 }

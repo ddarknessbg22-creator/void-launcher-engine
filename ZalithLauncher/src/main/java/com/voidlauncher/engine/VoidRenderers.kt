@@ -1,5 +1,7 @@
 package com.voidlauncher.engine
 
+import android.content.Context
+import com.movtery.zalithlauncher.game.plugin.renderer.RendererPluginManager
 import com.movtery.zalithlauncher.game.renderer.Renderers
 import com.movtery.zalithlauncher.game.renderer.RendererInterface
 import com.movtery.zalithlauncher.setting.RendererSettings
@@ -14,8 +16,16 @@ data class RendererOption(
 )
 
 object VoidRenderers {
-    fun options(): List<RendererOption> = runCatching {
-        Renderers.init()
+    /** Plugins can be installed after VOID; always refresh the registry before listing. */
+    fun refresh(context: Context) {
+        runCatching {
+            com.movtery.zalithlauncher.game.plugin.PluginLoader.loadAllPlugins(context, true)
+        }
+        runCatching { Renderers.init(reset = true) }
+    }
+
+    fun options(context: Context? = null): List<RendererOption> = runCatching {
+        if (context != null) refresh(context)
         Renderers.getRenderers().map { renderer: RendererInterface ->
             RendererOption(
                 name = renderer.getRendererName(),
@@ -44,11 +54,15 @@ object VoidRenderers {
 }
 
 private fun RendererInterface.isAvailable(): Boolean = runCatching {
-    // A renderer is usable when its required native library is present in this APK.
+    // Plugin renderers live in their own APK's nativeLibraryDir; built-ins use ours.
+    val directory = (this as? com.movtery.zalithlauncher.game.plugin.Plugin)
+        ?.getNativeLibPath()
+        ?.takeIf { it.isNotBlank() }
+        ?: com.movtery.zalithlauncher.path.PathManager.DIR_NATIVE_LIB
     val library = getRendererLibrary()
     if (library.isBlank()) true
-    else java.io.File(
-        com.movtery.zalithlauncher.path.PathManager.DIR_NATIVE_LIB,
-        if (library.startsWith("lib")) library else "lib$library.so",
-    ).exists()
+    else {
+        val fileName = if (library.startsWith("lib")) library else "lib$library.so"
+        java.io.File(directory, fileName).exists()
+    }
 }.getOrDefault(false)
