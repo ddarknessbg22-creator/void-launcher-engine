@@ -7,6 +7,8 @@ import com.movtery.zalithlauncher.game.account.AccountType as ZalithAccountType
 import com.movtery.zalithlauncher.game.account.AccountsManager
 import com.movtery.zalithlauncher.game.launch.GameLaunchFlow
 import com.movtery.zalithlauncher.game.renderer.Renderers
+import com.movtery.zalithlauncher.setting.RendererSettings
+import com.movtery.zalithlauncher.setting.enums.ResolutionRule
 import com.movtery.zalithlauncher.game.version.installed.SettingState
 import com.movtery.zalithlauncher.game.version.installed.VersionsManager
 import com.movtery.zalithlauncher.ui.toAndroidString
@@ -39,16 +41,49 @@ object VoidEngineBridge {
         Renderers.init()
 
         val gameHome = VoidPaths.root(context).absolutePath
+        val performance = VoidPerformancePreset.fromId(settings.performancePreset)
         val version = VersionsManager.loadVersion(gameHome, versionId)
             ?: error("Minecraft $versionId is not installed under $gameHome")
         check(File(version.getVersionPath(), "$versionId.json").isFile) { "Missing version JSON" }
         check(version.getClientJar().isFile) { "Missing client JAR" }
 
+        // Renderer choice is per version: the modern Krypton wrapper that the registry lists
+        // first renders 1.12.2 at ~1 FPS, while GL4ES is the fast path there. The selection also
+        // verifies the renderer's native library is actually present before launch.
+        val selection = VoidRendererSelector.bestFor(
+            context = context,
+            minecraftVersion = versionId.substringBefore('-'),
+            preferredId = VoidRendererSelector.preferred(),
+        ) ?: error("No loadable renderer found. Install a renderer plugin in Settings → System.")
+
+        // Render resolution is the other half of frame rate: the engine renders at this percentage
+        // of the physical screen, so 100% on a 1440p phone is a large, invisible GPU cost.
+        runCatching {
+            RendererSettings.resolutionRule.save(ResolutionRule.PERCENTAGE)
+            RendererSettings.resolutionRatio.save(performance.resolutionPercent)
+        }
+
+        if (!VoidRendererSelector.apply(selection)) {
+            error("Could not activate the ${selection.name} renderer")
+        }
+
         version.getVersionConfig().apply {
             isolationType = SettingState.ENABLE
             skipGameIntegrityCheck = SettingState.ENABLE
-            jvmArgs = settings.jvmArgs
+            jvmArgs = mergeJvmArgs(settings.jvmArgs, performance.jvmArgs)
             ramAllocation = settings.memoryMb
+        }
+
+        // Write the performance profile into the real options.txt before the game starts. This is
+        // what actually removes in-game lag: render/simulation distance, particles, clouds and
+        // deferred chunk updates, not launcher-side tuning.
+        val profileApplied = VoidPerformance.apply(context, version, performance)
+        if (!profileApplied) {
+            // Non-fatal: the game still launches with whatever options.txt already holds.
+            android.util.Log.w(
+                "VoidEngineBridge",
+                "Could not write the ${performance.id} performance profile; launching with existing options",
+            )
         }
 
         val zalithAccount = account.toZalithAccount()
@@ -83,6 +118,16 @@ object VoidEngineBridge {
             )
         }
     }
+
+    /**
+     * Combines user JVM arguments with the preset's, dropping duplicates so the game does not
+     * receive the same flag twice (the later one would silently win).
+     */
+    fun mergeJvmArgs(user: String, preset: String): String =
+        (user.trim().split(Regex("\\s+")) + preset.trim().split(Regex("\\s+")))
+            .filter { it.isNotBlank() }
+            .distinct()
+            .joinToString(" ")
 
     private fun VoidAccount.toZalithAccount(): Account {
         val microsoft = type == VoidAccountType.MICROSOFT

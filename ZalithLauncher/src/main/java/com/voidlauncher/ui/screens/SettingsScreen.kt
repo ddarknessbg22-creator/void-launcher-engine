@@ -243,6 +243,36 @@ private fun AccountSettings(
 
 @Composable
 private fun LauncherSettings(state: UiState, vm: VoidViewModel, context: android.content.Context) {
+    val preset = com.voidlauncher.engine.VoidPerformancePreset.fromId(state.settings.performancePreset)
+
+    VoidSectionTitle("Performance")
+    VoidPanel(Modifier.padding(bottom = 14.dp)) {
+        VoidChoiceRow(
+            label = "In-game profile",
+            value = preset.label,
+            detail = preset.detail,
+            options = com.voidlauncher.engine.VoidPerformancePreset.entries.map { it.label },
+            onSelect = { label ->
+                val picked = com.voidlauncher.engine.VoidPerformancePreset.entries
+                    .firstOrNull { it.label == label } ?: preset
+                vm.setPerformancePreset(picked.id)
+            },
+        )
+        VoidDivider()
+        VoidRow("Render distance", "${preset.renderDistance} chunks")
+        VoidRow("Simulation distance", "${preset.simulationDistance} chunks")
+        VoidRow("Frame cap", "${preset.maxFps} FPS")
+        VoidRow("Graphics", preset.graphicsMode.replaceFirstChar { it.uppercase() })
+        VoidRow("Particles", preset.particles.replaceFirstChar { it.uppercase() })
+        VoidRow("Clouds", if (preset.clouds) "On" else "Off")
+        VoidRow("Render resolution", "${preset.resolutionPercent}%")
+        VoidDivider()
+        Text(
+            "Applied to the game's own options.txt on the next launch. Lower render distance is the single biggest win on a phone GPU.",
+            style = VoidDesign.Caption,
+        )
+    }
+
     VoidSectionTitle("Automation")
     VoidPanel {
         VoidToggleRow(
@@ -253,6 +283,13 @@ private fun LauncherSettings(state: UiState, vm: VoidViewModel, context: android
         )
         VoidDivider()
         VoidRow("JVM arguments", if (state.settings.jvmArgs.isBlank()) "None" else state.settings.jvmArgs)
+        VoidDivider()
+        VoidRow("Memory", "${state.settings.memoryMb} MB")
+        VoidDivider()
+        Text(
+            "The performance profile adds its own GC flags on top of your JVM arguments.",
+            style = VoidDesign.Caption,
+        )
     }
 }
 

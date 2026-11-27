@@ -1,38 +1,44 @@
 package com.voidlauncher.engine
 
 import android.content.Context
-import com.movtery.zalithlauncher.game.plugin.renderer.RendererPluginManager
+import com.movtery.zalithlauncher.game.plugin.PluginLoader
 import com.movtery.zalithlauncher.game.renderer.Renderers
 import com.movtery.zalithlauncher.game.renderer.RendererInterface
 import com.movtery.zalithlauncher.setting.RendererSettings
 
-/** Real renderer list from the engine, with actual MobileGlues detection. */
+/** Real renderer list from the engine, with actual native-library detection. */
 data class RendererOption(
     val name: String,
     val uniqueId: String,
     val description: String,
     val available: Boolean,
     val isMobileGlues: Boolean,
+    val library: String,
 )
 
 object VoidRenderers {
-    /** Plugins can be installed after VOID; always refresh the registry before listing. */
+    /**
+     * Plugins can be installed after VOID, so refresh the registry before listing.
+     *
+     * Order matters: `Renderers.init(reset = true)` clears the registry, so loading plugins first
+     * and then resetting threw every plugin renderer away. Reset first, then load plugins.
+     */
     fun refresh(context: Context) {
-        runCatching {
-            com.movtery.zalithlauncher.game.plugin.PluginLoader.loadAllPlugins(context, true)
-        }
         runCatching { Renderers.init(reset = true) }
+        runCatching { PluginLoader.loadAllPlugins(context, true) }
     }
 
     fun options(context: Context? = null): List<RendererOption> = runCatching {
         if (context != null) refresh(context)
         Renderers.getRenderers().map { renderer: RendererInterface ->
+            val library = runCatching { renderer.getRendererLibrary() }.getOrDefault("")
             RendererOption(
                 name = renderer.getRendererName(),
                 uniqueId = renderer.getUniqueIdentifier(),
                 description = renderer.getRendererSummary().orEmpty(),
-                available = renderer.isAvailable(),
+                available = VoidRendererSelector.isLibraryPresent(renderer, library),
                 isMobileGlues = renderer.getRendererId().contains("mobileglues", true),
+                library = library,
             )
         }
     }.getOrDefault(emptyList())
@@ -42,27 +48,19 @@ object VoidRenderers {
         Renderers.getCurrentRenderer().getUniqueIdentifier()
     }.getOrDefault("")
 
-    fun select(uniqueId: String) {
-        runCatching {
-            Renderers.init()
-            val chosen = Renderers.setCurrentRenderer(uniqueId, retryToFirstOnFailure = false)
-            RendererSettings.renderer.save(chosen.getUniqueIdentifier())
-        }
-    }
+    /**
+     * Selects a renderer. Returns false when the id is unknown or its native library is missing,
+     * so the caller can tell the user instead of leaving the registry with no current renderer.
+     */
+    fun select(uniqueId: String): Boolean = runCatching {
+        Renderers.init()
+        val known = Renderers.getRenderers().firstOrNull { it.getUniqueIdentifier() == uniqueId }
+            ?: return false
+        if (!VoidRendererSelector.isLibraryPresent(known)) return false
+        Renderers.setCurrentRenderer(uniqueId, retryToFirstOnFailure = true)
+        RendererSettings.renderer.save(uniqueId)
+        true
+    }.getOrDefault(false)
 
     fun hasMobileGlues(): Boolean = options().any { it.isMobileGlues && it.available }
 }
-
-private fun RendererInterface.isAvailable(): Boolean = runCatching {
-    // Plugin renderers live in their own APK's nativeLibraryDir; built-ins use ours.
-    val directory = (this as? com.movtery.zalithlauncher.game.plugin.Plugin)
-        ?.getNativeLibPath()
-        ?.takeIf { it.isNotBlank() }
-        ?: com.movtery.zalithlauncher.path.PathManager.DIR_NATIVE_LIB
-    val library = getRendererLibrary()
-    if (library.isBlank()) true
-    else {
-        val fileName = if (library.startsWith("lib")) library else "lib$library.so"
-        java.io.File(directory, fileName).exists()
-    }
-}.getOrDefault(false)

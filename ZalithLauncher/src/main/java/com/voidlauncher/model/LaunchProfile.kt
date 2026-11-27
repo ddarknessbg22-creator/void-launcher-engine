@@ -26,4 +26,6 @@ data class ProfileStore(
 data class LaunchSettings(
     val memoryMb: Int = 2048,
     val jvmArgs: String = "",
+    /** VoidPerformancePreset id: battery | performance | balanced | quality. */
+    val performancePreset: String = "performance",
 )

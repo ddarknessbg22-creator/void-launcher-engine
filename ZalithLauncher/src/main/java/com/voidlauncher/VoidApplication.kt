@@ -39,15 +39,21 @@ class VoidApplication : com.movtery.zalithlauncher.ZLApplication() {
         // VOID does not launch Zalith's launcher UI, so initialize the engine here.
         runCatching {
             Renderers.init()
-            val saved = RendererSettings.renderer.getValue()
-            if (saved.isNotBlank() && Renderers.getRenderers().any { it.getUniqueIdentifier() == saved }) {
-                Renderers.setCurrentRenderer(saved, retryToFirstOnFailure = false)
+            // Never take the first registry entry: that is the modern Krypton wrapper, which
+            // renders old versions (1.12.2) at ~1 FPS. Pick a loadable renderer and verify its
+            // native library exists before accepting it.
+            val selection = VoidRendererSelector.bestFor(
+                context = this,
+                minecraftVersion = null,
+                preferredId = VoidRendererSelector.preferred(),
+            )
+            if (selection != null) {
+                VoidRendererSelector.apply(selection)
             } else {
-                val first = Renderers.getRenderers().firstOrNull()
-                if (first != null) {
-                    Renderers.setCurrentRenderer(first.getUniqueIdentifier(), retryToFirstOnFailure = false)
-                    RendererSettings.renderer.save(first.getUniqueIdentifier())
-                }
+                com.movtery.zalithlauncher.utils.logging.Logger.error(
+                    "VoidApplication",
+                    "No loadable renderer found; the game will fail to start until one is installed",
+                )
             }
         }
     }

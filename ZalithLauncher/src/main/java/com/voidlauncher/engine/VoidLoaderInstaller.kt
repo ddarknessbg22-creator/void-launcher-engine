@@ -12,10 +12,12 @@ import com.movtery.zalithlauncher.game.addons.modloader.fabriclike.quilt.QuiltVe
 import com.movtery.zalithlauncher.game.addons.modloader.forgelike.forge.ForgeVersions
 import com.movtery.zalithlauncher.game.addons.modloader.forgelike.neoforge.NeoForgeVersion
 import com.movtery.zalithlauncher.game.addons.modloader.forgelike.neoforge.NeoForgeVersions
+import com.movtery.zalithlauncher.coroutine.TaskStage
 import com.movtery.zalithlauncher.game.download.game.GameDownloadInfo
 import com.movtery.zalithlauncher.game.download.game.GameInstaller
 import com.voidlauncher.util.VoidPaths
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
@@ -61,6 +63,15 @@ object VoidLoaderInstaller {
      */
     data class LoaderProgress(val label: String, val fraction: Float)
 
+    /**
+     * Maps the engine's progress value onto a bar fraction.
+     *
+     * The engine reports `-1` (and occasionally NaN) for "running but not measurable yet"; both
+     * must render as 0 rather than poisoning the bar.
+     */
+    fun progressFraction(raw: Float): Float =
+        if (raw.isFinite() && raw >= 0f) raw.coerceIn(0f, 1f) else 0f
+
     private val _loaderTasks = kotlinx.coroutines.flow.MutableStateFlow<List<String>>(emptyList())
     val loaderTasks: kotlinx.coroutines.flow.StateFlow<List<String>> get() = _loaderTasks
 
@@ -105,24 +116,35 @@ object VoidLoaderInstaller {
         suspendCancellableCoroutine<Unit> { cont ->
             val done = AtomicBoolean(false)
             val observer = scope.launch {
+                // A task's progress is its own StateFlow: the task LIST does not change while a
+                // download advances, so collecting only tasksFlow left the bar frozen at 0%.
+                // Track the running task and collect its progress flow instead.
+                var progressJob: Job? = null
+                var observed: com.movtery.zalithlauncher.coroutine.Task? = null
                 installer.tasksFlow.collect { tasks ->
                     _loaderTasks.value = tasks.map { it.title.toAndroidString(context) }
-                    val running = tasks.firstOrNull { it.task.stage.value.name == "RUNNING" }
+                    val running = tasks.firstOrNull { it.task.stage.value == TaskStage.RUNNING }
                         ?: tasks.lastOrNull()
-                    if (running != null) {
-                        val raw = running.task.progress.value
-                        val fraction = if (raw >= 0f) raw.coerceIn(0f, 1f) else 0f
-                        _loaderProgress.value = LoaderProgress(
-                            label = running.title.toAndroidString(context),
-                            fraction = fraction,
-                        )
+                    if (running == null) return@collect
+                    val label = running.title.toAndroidString(context)
+                    if (running.task !== observed) {
+                        observed = running.task
+                        progressJob?.cancel()
+                        progressJob = launch {
+                            running.task.progress.collect { raw ->
+                                _loaderProgress.value = LoaderProgress(label, progressFraction(raw))
+                            }
+                        }
                     }
+                    _loaderProgress.value =
+                        LoaderProgress(label, progressFraction(running.task.progress.value))
                 }
             }
             cont.invokeOnCancellation { observer.cancel() }
             installer.installGame(
                 onInstalled = {
                     observer.cancel()
+                    _loaderProgress.value = LoaderProgress("Done", 1f)
                     if (done.compareAndSet(false, true) && cont.isActive) cont.resume(Unit)
                 },
                 onError = { th ->

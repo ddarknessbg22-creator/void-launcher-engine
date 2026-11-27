@@ -340,9 +340,24 @@ class VoidViewModel(
         settingsRepo.updateAdvanced(transform)
     }
 
-    /** Sets a renderer that actually exists in the engine registry. */
+    /**
+     * Selects an in-game performance profile. The profile is written to the game's options.txt on
+     * the next launch, so it is persisted here and reported immediately.
+     */
+    fun setPerformancePreset(id: String) {
+        val preset = com.voidlauncher.engine.VoidPerformancePreset.fromId(id)
+        settingsRepo.updateSettings { it.copy(performancePreset = preset.id) }
+        _ui.update { it.copy(lastLaunchMessage = "${preset.label} profile · ${preset.renderDistance} chunks · ${preset.maxFps} FPS cap") }
+        notify("${preset.label} performance profile selected")
+    }
+
+    /** Sets a renderer that actually exists in the engine registry and whose native library is present. */
     fun setRenderer(uniqueId: String) {
-        com.voidlauncher.engine.VoidRenderers.select(uniqueId)
+        val ok = com.voidlauncher.engine.VoidRenderers.select(uniqueId)
+        if (!ok) {
+            notify("That renderer is not available on this device")
+            return
+        }
         settingsRepo.updateAdvanced { it.copy(glImplementation = uniqueId) }
         _ui.update { it.copy(preferredEngine = uniqueId) }
         notify("Renderer changed to ${com.voidlauncher.engine.VoidRenderers.options().firstOrNull { it.uniqueId == uniqueId }?.name ?: uniqueId}")
@@ -482,14 +497,19 @@ class VoidViewModel(
             val outcome = runCatching {
                 com.voidlauncher.engine.VoidModBrowser.search(query, _ui.value.selectedVersionId)
             }
-            val results = outcome.getOrDefault(emptyList()).map { result ->
+            val search = outcome.getOrNull()
+            val results = search?.results.orEmpty().map { result ->
                 val installed = result.id in settingsRepo.installedProjectIds(_ui.value.selectedVersionId.orEmpty())
                 result.copy(installed = installed)
             }
             _ui.update { it.copy(modResults = results, modSearching = false) }
             outcome.onFailure { notify(it.message ?: "Mod search failed") }
-            if (outcome.isSuccess && results.isEmpty()) {
-                notify("No results for \"$query\"")
+            if (outcome.isSuccess) {
+                // Report a provider that failed instead of showing an empty list with no reason.
+                search?.warnings?.firstOrNull()?.let { notify(it) }
+                if (results.isEmpty() && search?.warnings?.isEmpty() == true) {
+                    notify("No results for \"$query\"")
+                }
             }
         }
     }

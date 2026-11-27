@@ -252,12 +252,13 @@ private fun ModsSection(state: UiState, vm: VoidViewModel) {
 
     VoidSectionTitle("Installed mods", trailing = {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("↻", style = VoidDesign.Label.copy(color = VoidDesign.Ink),
+            Text("REFRESH", style = VoidDesign.Label.copy(color = VoidDesign.Ink),
                 modifier = Modifier
                     .clickable { vm.loadMods(state.selectedVersionId.orEmpty()) }
-                    .padding(horizontal = 8.dp, vertical = 4.dp))
+                    .padding(horizontal = 10.dp, vertical = 8.dp))
             Text("ADD JAR", style = VoidDesign.Label.copy(color = VoidDesign.Ink),
-                modifier = Modifier.clickable { picker.launch("*/*") })
+                modifier = Modifier.clickable { picker.launch("*/*") }
+                    .padding(horizontal = 10.dp, vertical = 8.dp))
         }
     })
     VoidPanel(Modifier.padding(bottom = 16.dp)) {
