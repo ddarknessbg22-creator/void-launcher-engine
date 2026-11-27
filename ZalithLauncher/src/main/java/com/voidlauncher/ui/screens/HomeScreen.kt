@@ -40,6 +40,7 @@ import com.voidlauncher.util.Net
 @Composable
 fun HomeScreen(state: UiState, vm: VoidViewModel, onNavigate: (String) -> Unit) {
     val account = state.accounts.firstOrNull { it.id == state.selectedAccountId }
+        ?: state.accounts.firstOrNull()
     val installed = state.selectedVersionId?.let(state.installedIds::contains) ?: false
     val download = state.download
     val java = state.javaDownload
@@ -58,11 +59,15 @@ fun HomeScreen(state: UiState, vm: VoidViewModel, onNavigate: (String) -> Unit) 
             Text("VOID", style = VoidDesign.Display)
             Spacer(Modifier.weight(1f))
             Box(
-                Modifier.size(30.dp).clip(CircleShape).background(VoidDesign.Ink),
+                Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(VoidDesign.Ink)
+                    .clickable { onNavigate("settings") },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    account?.username?.take(1)?.uppercase() ?: "·",
+                    account?.username?.firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "V",
                     color = VoidDesign.Canvas,
                     fontWeight = FontWeight.Bold,
                 )
@@ -197,7 +202,7 @@ private fun PrimaryLaunch(busy: Boolean, installed: Boolean, state: UiState, vm:
     Spacer(Modifier.height(8.dp))
     Text(
         if (state.selectedVersionId == null) "Choose a version first"
-        else "${state.activeLoader} loader · ${state.mods.size} mods ready",
+        else "${state.loaderOfSelectedVersion} loader · ${state.mods.size} mods ready",
         style = VoidDesign.Caption,
         modifier = Modifier.fillMaxWidth(),
     )

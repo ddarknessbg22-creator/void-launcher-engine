@@ -76,7 +76,20 @@ data class UiState(
     val modVersionLoading: Boolean = false,
     val modSelected: com.voidlauncher.engine.VoidModResult? = null,
     val installedModFiles: Set<String> = emptySet(),
-)
+) {
+    /** Loader inferred from an installed version id such as "1.12.2-forge". */
+    val loaderOfSelectedVersion: String
+        get() {
+            val id = selectedVersionId ?: return "Vanilla"
+            return when {
+                id.contains("fabric", true) -> "Fabric"
+                id.contains("quilt", true) -> "Quilt"
+                id.contains("neoforge", true) -> "NeoForge"
+                id.contains("forge", true) -> "Forge"
+                else -> "Vanilla"
+            }
+        }
+}
 
 class VoidViewModel(
     private val appContext: Context,
@@ -480,7 +493,7 @@ class VoidViewModel(
     fun downloadMod(result: com.voidlauncher.engine.VoidModResult) {
         // Derive the loader from the actual selected version id ("1.12.2-forge"), not from
         // an in-session toggle, so an installed loader version is always accepted.
-        if (_ui.value.loaderOfSelectedVersion() == "Vanilla") {
+        if (_ui.value.loaderOfSelectedVersion == "Vanilla") {
             notify("To download mods, install a mod loader first")
             return
         }
@@ -648,18 +661,6 @@ class VoidViewModel(
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         runCatching { appContext.startActivity(intent) }
             .onFailure { notify("Open ${EngineRepository.VOID_ENGINE_URL} to get VOID Engine") }
-    }
-
-    /** Loader inferred from an installed version id such as "1.12.2-forge". */
-    fun loaderOfSelectedVersion(): String {
-        val id = selectedVersionId ?: return "Vanilla"
-        return when {
-            id.contains("fabric", true) -> "Fabric"
-            id.contains("quilt", true) -> "Quilt"
-            id.contains("neoforge", true) -> "NeoForge"
-            id.contains("forge", true) -> "Forge"
-            else -> "Vanilla"
-        }
     }
 
     /**
