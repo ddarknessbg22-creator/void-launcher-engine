@@ -42,8 +42,7 @@ object VoidModBrowser {
                         id = data.platformId(),
                         name = info?.displayName()?.takeIf { it.isNotBlank() }
                             ?: data.platformTitle(),
-                        summary = info?.description()?.takeIf { it.isNotBlank() }
-                            ?: data.platformDescription(),
+                        summary = data.platformDescription(),
                         platform = Platform.MODRINTH.displayName,
                         platformKind = Platform.MODRINTH,
                         iconUrl = data.platformIconUrl(),

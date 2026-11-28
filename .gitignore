@@ -34,3 +34,6 @@ LWJGL/*/build/
 
 .vscode/
 
+
+# Local Gradle scratch
+.gradle-home/

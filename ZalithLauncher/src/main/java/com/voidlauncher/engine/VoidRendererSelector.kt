@@ -65,18 +65,20 @@ object VoidRendererSelector {
         val order = if (isModern(minecraftVersion)) MODERN else LEGACY
         for (key in order) {
             usable.firstOrNull { candidate ->
-                candidate.id.contains(key, ignoreCase = true) && supports(candidate, minecraftVersion)
+                val text = "${candidate.id} ${candidate.name}"
+                text.contains(key, ignoreCase = true) && supports(candidate, minecraftVersion)
             }?.let { return it.id }
         }
 
-        // Nothing matched by name: take the first candidate that supports the version.
-        return usable.firstOrNull { supports(it, minecraftVersion) }?.id ?: usable.first().id
+        // Nothing matched by name: prefer a version-compatible renderer, but never fall back to
+        // a renderer that does not support this Minecraft version.
+        return usable.firstOrNull { supports(it, minecraftVersion) }?.id
     }
 
     /** 1.17 and newer use the modern path; 1.16.5 and older need GL4ES. */
     fun isModern(minecraftVersion: String?): Boolean {
         val parts = versionParts(minecraftVersion) ?: return true
-        return parts.first > 1 || (parts.first == 1 && parts.second >= 17)
+        return parts[0] > 1 || (parts[0] == 1 && parts.getOrElse(1) { 0 } >= 17)
     }
 
     private fun supports(candidate: RendererCandidate, minecraftVersion: String?): Boolean {
@@ -114,7 +116,7 @@ object VoidRendererSelector {
         // init() without reset: a reset clears the registry, which would also drop every renderer
         // contributed by an installed renderer plugin.
         runCatching { Renderers.init() }
-        runCatching { context?.let { PluginLoader.loadAllPlugins(it) } }
+        runCatching { context?.let { PluginLoader.loadAllPlugins(it, force = true) } }
         val renderers = runCatching { Renderers.getRenderers() }.getOrDefault(emptyList())
         return renderers.map { renderer ->
             val library = runCatching { renderer.getRendererLibrary() }.getOrNull().orEmpty()
@@ -135,6 +137,7 @@ object VoidRendererSelector {
      */
     fun isLibraryPresent(renderer: RendererInterface, library: String = runCatching { renderer.getRendererLibrary() }.getOrDefault("")): Boolean {
         if (library.isBlank()) return true
+        if (File(library).isAbsolute) return File(library).isFile
         val directory = (renderer as? Plugin)?.getNativeLibPath()?.takeIf { it.isNotBlank() }
             ?: runCatching { PathManager.DIR_NATIVE_LIB }.getOrNull()
             ?: return false
@@ -179,7 +182,7 @@ object VoidRendererSelector {
             Logger.error(TAG, "Refusing to select unknown renderer ${selection.id}")
             return false
         }
-        Renderers.setCurrentRenderer(selection.id, retryToFirstOnFailure = true)
+        Renderers.setCurrentRenderer(selection.id, retryToFirstOnFailure = false)
         save(selection.id)
         true
     }.getOrDefault(false)
