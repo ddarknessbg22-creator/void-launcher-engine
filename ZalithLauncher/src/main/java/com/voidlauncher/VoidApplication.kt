@@ -9,6 +9,7 @@ import com.voidlauncher.data.JavaRepository
 import com.voidlauncher.data.SettingsRepository
 import com.voidlauncher.data.VersionRepository
 import com.voidlauncher.engine.EngineRepository
+import com.voidlauncher.engine.VoidRendererSelector
 import com.voidlauncher.util.TokenVault
 import com.voidlauncher.util.VoidPaths
 
