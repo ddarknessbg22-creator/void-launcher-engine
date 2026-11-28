@@ -61,7 +61,9 @@ object VoidLoaderInstaller {
      * Installs [loader] [loaderVersion] for [minecraftVersion] as a new version named
      * `<minecraftVersion>-<loader>` and returns that version name.
      */
-    data class LoaderProgress(val label: String, val fraction: Float)
+    data class LoaderProgress(val label: String, val fraction: Float, val speedBps: Long = 0L) {
+        val percent: Int get() = (fraction * 100).toInt().coerceIn(0, 100)
+    }
 
     /**
      * Maps the engine's progress value onto a bar fraction.
@@ -132,19 +134,26 @@ object VoidLoaderInstaller {
                         progressJob?.cancel()
                         progressJob = launch {
                             running.task.progress.collect { raw ->
-                                _loaderProgress.value = LoaderProgress(label, progressFraction(raw))
+                                _loaderProgress.value = LoaderProgress(
+                                    label,
+                                    progressFraction(raw),
+                                    running.task.rateBytesPerSec.value ?: 0L,
+                                )
                             }
                         }
                     }
-                    _loaderProgress.value =
-                        LoaderProgress(label, progressFraction(running.task.progress.value))
+                    _loaderProgress.value = LoaderProgress(
+                        label,
+                        progressFraction(running.task.progress.value),
+                        running.task.rateBytesPerSec.value ?: 0L,
+                    )
                 }
             }
             cont.invokeOnCancellation { observer.cancel() }
             installer.installGame(
                 onInstalled = {
                     observer.cancel()
-                    _loaderProgress.value = LoaderProgress("Done", 1f)
+                    _loaderProgress.value = LoaderProgress("Done", 1f, 0L)
                     if (done.compareAndSet(false, true) && cont.isActive) cont.resume(Unit)
                 },
                 onError = { th ->

@@ -42,6 +42,7 @@ import com.voidlauncher.ui.components.VoidContentFrame
 import com.voidlauncher.ui.components.VoidDivider
 import com.voidlauncher.ui.components.VoidPanel
 import com.voidlauncher.ui.components.VoidPill
+import com.voidlauncher.ui.components.VoidPrimaryButton
 import com.voidlauncher.ui.components.VoidSecondaryButton
 import com.voidlauncher.ui.components.VoidSectionTitle
 import com.voidlauncher.ui.theme.VoidDesign
@@ -254,7 +255,7 @@ private fun ModsSection(state: UiState, vm: VoidViewModel) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("REFRESH", style = VoidDesign.Label.copy(color = VoidDesign.Ink),
                 modifier = Modifier
-                    .clickable { vm.loadMods(state.selectedVersionId.orEmpty()) }
+                    .clickable { vm.loadMods(state.selectedVersionId.orEmpty(), force = true) }
                     .padding(horizontal = 10.dp, vertical = 8.dp))
             Text("ADD JAR", style = VoidDesign.Label.copy(color = VoidDesign.Ink),
                 modifier = Modifier.clickable { picker.launch("*/*") }
@@ -282,9 +283,10 @@ private fun ModsSection(state: UiState, vm: VoidViewModel) {
                         Text(mod.name, style = VoidDesign.Body)
                         Text("${mod.loader} · ${Net.formatBytes(mod.sizeBytes)}", style = VoidDesign.Caption)
                     }
-                    VoidPill(if (mod.enabled) "On" else "Off", active = mod.enabled)
-                    Spacer(Modifier.size(10.dp))
-                    Text("TOGGLE", style = VoidDesign.Label, modifier = Modifier.clickable { vm.toggleMod(mod.fileName) })
+                    Box(Modifier.clip(RoundedCornerShape(5.dp)).clickable { vm.toggleMod(mod.fileName) }
+                        .padding(horizontal = 7.dp, vertical = 3.dp)) {
+                        VoidPill(if (mod.enabled) "On" else "Off", active = mod.enabled)
+                    }
                     Spacer(Modifier.size(10.dp))
                     Text("DEL", style = VoidDesign.Label.copy(color = VoidDesign.Danger),
                         modifier = Modifier.clickable { vm.deleteMod(mod.fileName) })
@@ -330,10 +332,15 @@ private fun ModsSection(state: UiState, vm: VoidViewModel) {
                         Spacer(Modifier.height(3.dp))
                         Text(result.summary, style = VoidDesign.Caption, maxLines = 2)
                     }
-                    VoidPill(result.platform)
+                    Column(horizontalAlignment = Alignment.End) {
+                        VoidPill(result.platform)
+                        Spacer(Modifier.height(4.dp))
+                        val loaderLabel = result.loaders.joinToString(" / ").ifBlank { result.platform }
+                        Text(loaderLabel.uppercase(), style = VoidDesign.Label.copy(color = VoidDesign.Muted))
+                    }
                 }
                 Spacer(Modifier.height(10.dp))
-                VoidSecondaryButton("Install", { vm.downloadMod(result) }, Modifier.fillMaxWidth())
+                VoidSecondaryButton("View details", { vm.openMod(result) }, Modifier.fillMaxWidth())
             }
         }
         if (state.modResults.isEmpty() && state.modQuery.isNotBlank() && !state.modSearching) {
@@ -348,11 +355,47 @@ private fun ModVersionSheet(state: UiState, vm: VoidViewModel) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = { vm.closeMod() },
         containerColor = VoidDesign.Panel,
-        title = { Text(selected.name, style = VoidDesign.Title) },
+        title = { Text(state.modDetail?.title ?: selected.name, style = VoidDesign.Title) },
         text = {
             Column(
                 Modifier.fillMaxWidth().heightIn(max = 460.dp).verticalScroll(rememberScrollState()),
             ) {
+                if (state.modDetailLoading) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = VoidDesign.Ink)
+                        Spacer(Modifier.size(10.dp))
+                        Text("Loading description…", style = VoidDesign.Caption)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
+                state.modDetail?.let { detail ->
+                    Text(
+                        detail.description.ifBlank { "No description provided." },
+                        style = VoidDesign.Body,
+                    )
+                    if (detail.images.isNotEmpty()) {
+                        Spacer(Modifier.height(14.dp))
+                        VoidSectionTitle("Images")
+                        detail.images.take(6).forEach { url ->
+                            Spacer(Modifier.height(8.dp))
+                            coil3.compose.AsyncImage(
+                                model = url,
+                                contentDescription = "Mod screenshot",
+                                modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp).clip(RoundedCornerShape(8.dp)),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        listOfNotNull(
+                            detail.author.takeIf { it.isNotBlank() }?.let { "By $it" },
+                            if (detail.downloads > 0) "${Net.formatBytes(detail.downloads)} downloads" else null,
+                        ).joinToString(" · "),
+                        style = VoidDesign.Caption,
+                    )
+                    Spacer(Modifier.height(14.dp))
+                }
+                VoidSectionTitle("Versions")
                 if (state.modDownloadActive) {
                     Text(
                         "Downloading ${Net.formatBytes(state.modDownloadBytes)} / ${Net.formatBytes(state.modDownloadTotal)}",
@@ -407,7 +450,9 @@ private fun ModVersionSheet(state: UiState, vm: VoidViewModel) {
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { vm.closeMod() }) { Text("Close", color = VoidDesign.Ink) } },
+        confirmButton = {
+            VoidPrimaryButton("Download", { vm.downloadMod(selected) }, Modifier.fillMaxWidth(), enabled = !state.modDownloadActive)
+        },
     )
 }
 
@@ -466,9 +511,15 @@ private fun LoadersSection(state: UiState, vm: VoidViewModel) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = VoidDesign.Ink)
                 Spacer(Modifier.size(10.dp))
-                Text(progress.label.ifBlank { "Installing ${state.activeLoader}" }, style = VoidDesign.Caption)
-                Spacer(Modifier.weight(1f))
-                Text("${(progress.fraction * 100).toInt()}%", style = VoidDesign.Caption)
+                Text(
+                    listOfNotNull(
+                        progress.label.ifBlank { "Installing ${state.activeLoader}" },
+                        if (progress.speedBps > 0) Net.formatBytes(progress.speedBps) + "/s" else null,
+                    ).joinToString(" · "),
+                    style = VoidDesign.Caption,
+                    modifier = Modifier.weight(1f),
+                )
+                Text("${progress.percent}%", style = VoidDesign.Caption)
             }
             Spacer(Modifier.height(8.dp))
             androidx.compose.material3.LinearProgressIndicator(

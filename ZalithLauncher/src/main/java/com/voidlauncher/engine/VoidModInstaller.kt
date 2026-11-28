@@ -6,6 +6,7 @@ import com.movtery.zalithlauncher.game.download.addon.platform.PlatformClasses
 import com.movtery.zalithlauncher.game.download.addon.platform.PlatformSearchData
 import com.movtery.zalithlauncher.game.download.addon.platform.PlatformSearchFilter
 import com.movtery.zalithlauncher.game.download.addon.platform.curseforge.CurseForgeSearcher
+import com.movtery.zalithlauncher.game.download.addon.platform.getProjectByVersion
 import com.movtery.zalithlauncher.game.download.addon.platform.getVersions
 import com.movtery.zalithlauncher.game.download.addon.platform.modrinth.ModrinthSearcher
 import com.movtery.zalithlauncher.game.version.installed.VersionFolders
@@ -32,7 +33,19 @@ data class VoidModResult(
     val platformKind: Platform,
     val iconUrl: String? = null,
     val installed: Boolean = false,
+    val loaders: List<String> = emptyList(),
     val data: PlatformSearchData,
+)
+
+/** Full project detail fetched on demand for a mod's detail tab. */
+data class VoidModDetail(
+    val title: String,
+    val description: String,
+    val images: List<String> = emptyList(),
+    val iconUrl: String? = null,
+    val author: String = "",
+    val downloads: Long = 0L,
+    val projectUrl: String? = null,
 )
 
 /** Downloads real mod files into the selected version's mods folder, with live progress. */
@@ -48,9 +61,11 @@ object VoidModInstaller {
                 .getAddonPage(PlatformClasses.MOD).data.forEach { (data, info) ->
                     results += VoidModResult(
                         id = data.platformId(),
-                        name = info?.displayName()?.ifBlank { null } ?: "Modrinth mod",
-                        summary = "", platform = Platform.MODRINTH.displayName,
-                        platformKind = Platform.MODRINTH, iconUrl = data.platformIconUrl(), data = data,
+                        name = data.platformTitle().ifBlank { query },
+                        summary = data.platformDescription(), platform = Platform.MODRINTH.displayName,
+                        platformKind = Platform.MODRINTH, iconUrl = data.platformIconUrl(),
+                        loaders = data.platformModLoaders().orEmpty().map { it.getDisplayName() },
+                        data = data,
                     )
                 }
         }
@@ -60,15 +75,40 @@ object VoidModInstaller {
                 .getAddonPage(PlatformClasses.MOD).data.forEach { (data, info) ->
                     results += VoidModResult(
                         id = data.platformId(),
-                        name = info?.displayName()?.ifBlank { null } ?: "CurseForge mod",
-                        summary = "", platform = Platform.CURSEFORGE.displayName,
-                        platformKind = Platform.CURSEFORGE, iconUrl = data.platformIconUrl(), data = data,
+                        name = data.platformTitle().ifBlank { query },
+                        summary = data.platformDescription(), platform = Platform.CURSEFORGE.displayName,
+                        platformKind = Platform.CURSEFORGE, iconUrl = data.platformIconUrl(),
+                        loaders = data.platformModLoaders().orEmpty().map { it.getDisplayName() },
+                        data = data,
                     )
                 }
         }
 
         return results.distinctBy { it.platform to it.id }
     }
+
+    /** Fetches the mod's long description and screenshots from its platform. */
+    suspend fun detail(result: VoidModResult): VoidModDetail = runCatching {
+        val project = getProjectByVersion(result.id, result.platformKind)
+        val images = project.platformScreenshots().map { it.imageUrl }.filter { it.isNotBlank() }
+        val body = (project as? com.movtery.zalithlauncher.game.download.addon.platform.modrinth.models.ModrinthSingleProject)?.body.orEmpty()
+        VoidModDetail(
+            title = project.platformTitle(),
+            description = body.ifBlank { project.platformSummary() },
+            images = images,
+            iconUrl = project.platformIconUrl(),
+            author = project.platformAuthors()?.joinToString(", ").orEmpty(),
+            downloads = project.platformDownloadCount(),
+            projectUrl = project.platformUrls(PlatformClasses.MOD).projectUrl,
+        )
+    }.getOrDefault(
+        VoidModDetail(
+            title = result.name,
+            description = result.summary,
+            images = emptyList(),
+            iconUrl = result.iconUrl,
+        ),
+    )
 
     /** Lists versions of a mod, newest compatible first. */
     suspend fun listVersions(

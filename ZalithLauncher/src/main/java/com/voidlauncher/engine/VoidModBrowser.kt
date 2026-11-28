@@ -40,12 +40,14 @@ object VoidModBrowser {
                 .getAddonPage(PlatformClasses.MOD).data.forEach { (data, info) ->
                     results += VoidModResult(
                         id = data.platformId(),
-                        name = info?.displayName()?.takeIf { it.isNotBlank() }
-                            ?: data.platformTitle(),
+                        // Use the platform's original title/description. The localized translation
+                        // registry prefers Chinese names on this device.
+                        name = data.platformTitle().ifBlank { query },
                         summary = data.platformDescription(),
                         platform = Platform.MODRINTH.displayName,
                         platformKind = Platform.MODRINTH,
                         iconUrl = data.platformIconUrl(),
+                        loaders = data.platformModLoaders().orEmpty().map { it.getDisplayName() },
                         data = data,
                     )
                 }
@@ -63,12 +65,14 @@ object VoidModBrowser {
                     .getAddonPage(PlatformClasses.MOD).data.forEach { (data, info) ->
                         results += VoidModResult(
                             id = data.platformId(),
-                            name = info?.displayName()?.takeIf { it.isNotBlank() }
-                                ?: data.platformTitle(),
+                            // Original platform title, never the localized/Chinese translation
+                            // or a generic "CurseForge mod" placeholder.
+                            name = data.platformTitle().ifBlank { query },
                             summary = data.platformDescription(),
                             platform = Platform.CURSEFORGE.displayName,
                             platformKind = Platform.CURSEFORGE,
                             iconUrl = data.platformIconUrl(),
+                            loaders = data.platformModLoaders().orEmpty().map { it.getDisplayName() },
                             data = data,
                         )
                     }

@@ -69,6 +69,7 @@ data class UiState(
     val loaderTasks: List<String> = emptyList(),
     val loaderProgress: com.voidlauncher.engine.VoidLoaderInstaller.LoaderProgress =
         com.voidlauncher.engine.VoidLoaderInstaller.LoaderProgress("", 0f),
+    val modsLoadedFor: String? = null,
     val modQuery: String = "",
     val modResults: List<com.voidlauncher.engine.VoidModResult> = emptyList(),
     val modSearching: Boolean = false,
@@ -79,6 +80,8 @@ data class UiState(
     val modDownloadBytes: Long = 0L,
     val modDownloadTotal: Long = 0L,
     val modSelected: com.voidlauncher.engine.VoidModResult? = null,
+    val modDetail: com.voidlauncher.engine.VoidModDetail? = null,
+    val modDetailLoading: Boolean = false,
     val installedModFiles: Set<String> = emptySet(),
 ) {
     /** Loader inferred from an installed version id such as "1.12.2-forge". */
@@ -307,7 +310,7 @@ class VoidViewModel(
         settingsRepo.selectedVersionId = id
         settingsRepo.lastLaunchMessage = ""
         _ui.update { it.copy(selectedVersionId = id, modsVersionId = id, lastLaunchMessage = "") }
-        loadMods(id)
+        loadMods(id, force = true)
     }
 
     fun installVersion(id: String) {
@@ -616,11 +619,15 @@ class VoidViewModel(
     }
 
     fun openMod(result: com.voidlauncher.engine.VoidModResult) {
-        _ui.update { it.copy(modSelected = result) }
+        _ui.update { it.copy(modSelected = result, modDetail = null, modDetailLoading = true) }
+        viewModelScope.launch {
+            val detail = com.voidlauncher.engine.VoidModInstaller.detail(result)
+            _ui.update { it.copy(modDetail = detail, modDetailLoading = false) }
+        }
     }
 
     fun closeMod() {
-        _ui.update { it.copy(modSelected = null, modVersions = emptyList()) }
+        _ui.update { it.copy(modSelected = null, modDetail = null, modDetailLoading = false, modVersions = emptyList()) }
     }
 
     private fun resolveDisplayName(uri: Uri, fallback: String): String {
@@ -864,8 +871,9 @@ class VoidViewModel(
 
     // ---------------------------------------------------------------- mods
 
-    fun loadMods(versionId: String) {
-        _ui.update { it.copy(mods = modsRepo.list(versionId), modsVersionId = versionId) }
+    fun loadMods(versionId: String, force: Boolean = false) {
+        if (!force && _ui.value.modsLoadedFor == versionId && _ui.value.modsVersionId == versionId) return
+        _ui.update { it.copy(mods = modsRepo.list(versionId), modsVersionId = versionId, modsLoadedFor = versionId) }
     }
 
     fun toggleMod(fileName: String) {

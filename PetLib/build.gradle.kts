@@ -121,9 +121,9 @@ androidComponents {
     onVariants { variant ->
         // cargo-ndk 产物目录（build/petlib-jniLibs/<abi>/libpetlib.so）。
         variant.sources.jniLibs?.addStaticSourceDirectory(
-            petlibJniLibs.get().asFile.apply { mkdirs() }.absolutePath
-        )
-    }
+                petlibJniLibs.get().asFile.apply { mkdirs() }.absolutePath
+            )
+        }
 }
 
 tasks.named("preBuild") {
