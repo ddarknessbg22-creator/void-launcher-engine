@@ -150,12 +150,12 @@ class SplashActivity : BaseAppCompatActivity() {
                             busy = unpackItems.any { it.state.value == InstallableItem.State.RUNNING },
                             onInstall = { startAllTask() },
                             onUseMobileGlues = {
-                                val target = com.voidlauncher.engine.VoidRenderers.options(this).firstOrNull { it.isMobileGlues && it.available }
+                                val target = com.voidlauncher.engine.VoidRenderers.options(this@SplashActivity).firstOrNull { it.isMobileGlues && it.available }
                                 if (target != null) {
                                     com.voidlauncher.engine.VoidRenderers.select(target.uniqueId)
-                                    Toast.makeText(this, "MobileGlues enabled", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this@SplashActivity, "MobileGlues enabled", Toast.LENGTH_SHORT).show()
                                 } else {
-                                    Toast.makeText(this, "MobileGlues is not available for this device", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this@SplashActivity, "MobileGlues is not available for this device", Toast.LENGTH_SHORT).show()
                                 }
                             },
                         )
