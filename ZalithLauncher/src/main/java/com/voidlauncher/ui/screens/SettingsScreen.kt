@@ -354,14 +354,14 @@ private fun SystemSettings(state: UiState, vm: VoidViewModel, context: android.c
     VoidSectionTitle("Renderer")
     VoidPanel {
         val mobileGlues = renderers.firstOrNull { it.isMobileGlues }
-        VoidRow(
-            "MobileGlues",
-            when {
-                mobileGlues == null -> "Not in this engine"
-                mobileGlues.available -> "Available"
-                else -> "Present / files missing"
-            },
-        )
+        if (mobileGlues != null && mobileGlues.available) {
+            VoidRow(
+                label = "MobileGlues",
+                value = if (mobileGlues.uniqueId == current) "ACTIVE" else "Use",
+                onClick = { vm.setRenderer(mobileGlues.uniqueId) },
+            )
+            VoidDivider()
+        }
         renderers.forEach { renderer ->
             VoidRow(
                 label = renderer.name

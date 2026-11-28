@@ -23,6 +23,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
@@ -148,6 +149,15 @@ class SplashActivity : BaseAppCompatActivity() {
                             states = unpackItems.associate { it.name to it.state.value },
                             busy = unpackItems.any { it.state.value == InstallableItem.State.RUNNING },
                             onInstall = { startAllTask() },
+                            onUseMobileGlues = {
+                                val target = com.voidlauncher.engine.VoidRenderers.options(this).firstOrNull { it.isMobileGlues && it.available }
+                                if (target != null) {
+                                    com.voidlauncher.engine.VoidRenderers.select(target.uniqueId)
+                                    Toast.makeText(this, "MobileGlues enabled", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(this, "MobileGlues is not available for this device", Toast.LENGTH_SHORT).show()
+                                }
+                            },
                         )
                     }
                 }

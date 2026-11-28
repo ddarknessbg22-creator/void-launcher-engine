@@ -16,21 +16,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.movtery.zalithlauncher.components.InstallableItem
+import com.voidlauncher.ui.components.VoidPanel
 import com.voidlauncher.ui.components.VoidPrimaryButton
 import com.voidlauncher.ui.theme.VoidDesign
 
-/**
- * First-run bootstrap: one button installs every missing engine component.
- * Returning users never see this screen because all tasks are already FINISHED.
- */
+/** First-run bootstrap: one button installs every missing engine component. */
 @Composable
 fun VoidBootstrapScreen(
     items: List<InstallableItem>,
     states: Map<String, InstallableItem.State>,
     busy: Boolean,
     onInstall: () -> Unit,
+    onUseMobileGlues: (() -> Unit)? = null,
 ) {
     val done = states.values.count { it == InstallableItem.State.FINISHED }
     val percent = if (items.isEmpty()) 1f else done.toFloat() / items.size
@@ -43,14 +44,14 @@ fun VoidBootstrapScreen(
                 .padding(horizontal = 24.dp, vertical = 40.dp),
         ) {
             Text("VOID", style = VoidDesign.Display)
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(4.dp))
             Text("ONE-TIME SETUP", style = VoidDesign.Label)
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(22.dp))
             Text("Preparing Minecraft", style = VoidDesign.Headline)
             Spacer(Modifier.height(8.dp))
             Text(
                 "VOID needs a Java runtime and graphics libraries to run real Minecraft. This happens once.",
-                style = VoidDesign.Body,
+                style = VoidDesign.Caption,
             )
             Spacer(Modifier.height(22.dp))
 
@@ -66,15 +67,8 @@ fun VoidBootstrapScreen(
 
             items.forEach { item ->
                 val state = states[item.name] ?: InstallableItem.State.NOT_STARTED
-                Row(
-                    Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        item.name,
-                        style = VoidDesign.Body,
-                        modifier = Modifier.weight(1f),
-                    )
+                Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(item.name, style = VoidDesign.Body, modifier = Modifier.weight(1f))
                     Text(
                         when (state) {
                             InstallableItem.State.FINISHED -> "READY"
@@ -88,7 +82,26 @@ fun VoidBootstrapScreen(
                 Spacer(Modifier.height(1.dp).background(VoidDesign.Line))
             }
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(20.dp))
+            onUseMobileGlues?.let { action ->
+                VoidPanel(Modifier.padding(bottom = 14.dp), onClick = action) {
+                    Text("OPTIONAL · GRAPHICS", style = VoidDesign.Label)
+                    Spacer(Modifier.height(6.dp))
+                    Text("Use MobileGlues", style = VoidDesign.Headline)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Needed for rendering mods like", style = VoidDesign.Caption)
+                    Text(
+                        "SODIUM",
+                        style = VoidDesign.Label.copy(
+                            color = Color(0xFF7CFF6B),
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text("Already bundled in VOID. Tap to enable it.", style = VoidDesign.Caption)
+                }
+            }
+
             VoidPrimaryButton(
                 text = if (busy) "Installing" else "Install everything",
                 onClick = onInstall,
