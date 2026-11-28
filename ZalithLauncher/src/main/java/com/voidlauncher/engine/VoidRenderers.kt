@@ -24,8 +24,17 @@ object VoidRenderers {
      * and then resetting threw every plugin renderer away. Reset first, then load plugins.
      */
     fun refresh(context: Context) {
+        val previous = runCatching { Renderers.getCurrentRenderer().getUniqueIdentifier() }.getOrNull()
+            ?: runCatching { RendererSettings.renderer.getValue() }.getOrNull().orEmpty()
         runCatching { Renderers.init(reset = true) }
         runCatching { PluginLoader.loadAllPlugins(context, true) }
+        if (previous.isNotBlank()) {
+            val restored = Renderers.getRenderers().firstOrNull { it.getUniqueIdentifier() == previous }
+                ?: Renderers.getRenderers().firstOrNull()
+            if (restored != null) {
+                runCatching { Renderers.setCurrentRenderer(restored.getUniqueIdentifier(), retryToFirstOnFailure = false) }
+            }
+        }
     }
 
     fun options(context: Context? = null): List<RendererOption> = runCatching {
@@ -57,8 +66,10 @@ object VoidRenderers {
         val known = Renderers.getRenderers().firstOrNull { it.getUniqueIdentifier() == uniqueId }
             ?: return false
         if (!VoidRendererSelector.isLibraryPresent(known)) return false
-        Renderers.setCurrentRenderer(uniqueId, retryToFirstOnFailure = true)
-        RendererSettings.renderer.save(uniqueId)
+        val selected = runCatching {
+            Renderers.setCurrentRenderer(uniqueId, retryToFirstOnFailure = true)
+        }.getOrNull() ?: return false
+        RendererSettings.renderer.save(selected.getUniqueIdentifier())
         true
     }.getOrDefault(false)
 

@@ -110,9 +110,12 @@ class VoidViewModel(
     val ui: StateFlow<UiState> = _ui.asStateFlow()
 
     private val root = VoidPaths.root(appContext)
-    private var launchActivity: Activity? = null
+    private var launchActivity: java.lang.ref.WeakReference<Activity>? = null
 
-    fun attachActivity(activity: Activity) { launchActivity = activity }
+    fun attachActivity(activity: Activity) { launchActivity = java.lang.ref.WeakReference(activity) }
+    fun detachActivity(activity: Activity) {
+        if (launchActivity?.get() === activity) launchActivity = null
+    }
     private var pendingAutoLaunch = false
     private var pendingHandoffVersion: String?
         get() = settingsRepo.pendingHandoffVersion
@@ -769,10 +772,15 @@ class VoidViewModel(
             }
         }
 
+        val activity = launchActivity?.get()
+        if (activity == null || activity.isFinishing || activity.isDestroyed) {
+            notify("Open VOID to start the game")
+            return
+        }
         accounts.touch(account.id)
         runCatching {
             com.voidlauncher.engine.VoidEngineBridge.launchInstalledVersion(
-                context = launchActivity ?: appContext,
+                context = activity,
                 versionId = versionId,
                 account = account,
                 settings = state.settings,
@@ -782,6 +790,7 @@ class VoidViewModel(
             _ui.update { it.copy(lastLaunchMessage = settingsRepo.lastLaunchMessage) }
             notify("Launched $versionId")
         }.onFailure { th ->
+            android.util.Log.e("VoidViewModel", "Launch failed for $versionId", th)
             settingsRepo.lastLaunchMessage = "Launch failed: ${th.message ?: th::class.simpleName}"
             _ui.update { it.copy(lastLaunchMessage = settingsRepo.lastLaunchMessage) }
             notify(th.message ?: "Launch failed")
@@ -918,6 +927,9 @@ class VoidViewModel(
     }
 
     override fun onCleared() {
+        launchActivity = null
+        pendingAutoLaunch = false
+        pendingHandoffVersion = null
         super.onCleared()
     }
 }

@@ -115,6 +115,11 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onDestroy() {
+        runCatching { vm.detachActivity(this) }
+        super.onDestroy()
+    }
 }
 
 private val NAV_ITEMS = listOf("Home", "Versions", "Library", "Settings")

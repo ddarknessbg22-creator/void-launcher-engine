@@ -159,6 +159,7 @@ object VoidRendererSelector {
         val name = candidates.firstOrNull { it.id == chosen }?.name ?: chosen
         val reason = when {
             preferredId == chosen -> "your choice"
+            minecraftVersion == null -> "best available"
             isModern(minecraftVersion) -> "best for $minecraftVersion"
             else -> "required for $minecraftVersion (legacy GL)"
         }

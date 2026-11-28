@@ -344,7 +344,7 @@ private fun NetworkSettings(state: UiState, vm: VoidViewModel) {
 
 @Composable
 private fun SystemSettings(state: UiState, vm: VoidViewModel, context: android.content.Context) {
-    val renderers = remember { com.voidlauncher.engine.VoidRenderers.options() }
+    val renderers = remember(context) { com.voidlauncher.engine.VoidRenderers.options(context) }
     val current = remember(state.preferredEngine) {
         com.voidlauncher.engine.VoidRenderers.current()
     }
